@@ -1,4 +1,4 @@
-package com.example.paneldecontrolreposteria
+package com.example.paneldecontrolreposteria.model
 
 import java.util.Date
 
