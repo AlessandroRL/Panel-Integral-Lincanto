@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "465769270490",
+    "project_id": "panel-integral-l-incanto",
+    "storage_bucket": "panel-integral-l-incanto.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:465769270490:android:bbb56559cd42de27afe9e3",
+        "android_client_info": {
+          "package_name": "com.example.paneldecontrolreposteria"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLAJ8vs4GnLf00Dzmhp-j2Cww2KZqFXp8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
