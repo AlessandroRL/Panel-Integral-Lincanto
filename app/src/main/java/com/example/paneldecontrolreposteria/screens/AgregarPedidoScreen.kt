@@ -15,6 +15,7 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
     var cliente by remember { mutableStateOf("") }
     var producto by remember { mutableStateOf("") }
     var cantidad by remember { mutableStateOf("") }
+    var fechaEntrega by remember { mutableStateOf("") }
     var errorMensaje by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
@@ -53,7 +54,7 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
                     scope.launch {
                         try {
                             val nuevoPedido = Pedido(
-                                id = "", // Se generará automáticamente en Firebase
+                                id = "",
                                 cliente = cliente,
                                 productos = listOf(producto),
                                 cantidad = cantidad.toInt(),
@@ -72,4 +73,3 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
         }
     }
 }
-

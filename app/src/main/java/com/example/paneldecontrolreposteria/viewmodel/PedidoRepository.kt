@@ -1,5 +1,6 @@
 package com.example.paneldecontrolreposteria.viewmodel
 
+import android.util.Log
 import com.example.paneldecontrolreposteria.model.Pedido
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObjects
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 class PedidoRepository {
     private val db = FirebaseFirestore.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
     private val _pedidos = MutableStateFlow<List<Pedido>>(emptyList())
     val pedidos: StateFlow<List<Pedido>> = _pedidos
 
@@ -32,8 +34,21 @@ class PedidoRepository {
         db.collection("pedidos").add(pedido).await()
     }
 
-    suspend fun actualizarEstadoPedido(id: String, nuevoEstado: String) {
-        db.collection("pedidos").document(id).update("estado", nuevoEstado).await()
+    suspend fun actualizarEstadoPedido(id: String, nuevoEstado: String): Boolean {
+        return try {
+            Log.d("PedidoRepository", "Actualizando pedido en Firestore: ID=$id, Estado=$nuevoEstado")
+
+            firestore.collection("pedidos")
+                .document(id)
+                .update("estado", nuevoEstado)
+                .await()
+
+            Log.d("PedidoRepository", "Actualización en Firestore exitosa")
+            true
+        } catch (e: Exception) {
+            Log.e("PedidoRepository", "Error Firestore: ${e.message}")
+            false
+        }
     }
 
     suspend fun obtenerPedidos(): List<Pedido> {
