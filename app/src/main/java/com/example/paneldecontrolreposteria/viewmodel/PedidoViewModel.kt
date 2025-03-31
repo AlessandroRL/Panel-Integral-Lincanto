@@ -73,4 +73,15 @@ class PedidoViewModel : ViewModel() {
             false
         }
     }
+
+    fun obtenerListaProductos(onProductosObtenidos: (List<String>) -> Unit) {
+        val productosRef = FirebaseFirestore.getInstance().collection("productos")
+
+        productosRef.get().addOnSuccessListener { result ->
+            val listaProductos = result.documents.mapNotNull { it.getString("nombre") }
+            onProductosObtenidos(listaProductos)
+        }.addOnFailureListener { exception ->
+            Log.e("PedidoViewModel", "Error al obtener productos: ${exception.message}")
+        }
+    }
 }
