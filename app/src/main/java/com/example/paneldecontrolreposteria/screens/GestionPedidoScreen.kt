@@ -7,18 +7,26 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.paneldecontrolreposteria.model.Pedido
+import androidx.navigation.NavController
 import com.example.paneldecontrolreposteria.viewmodel.PedidoViewModel
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GestionPedidoScreen(viewModel: PedidoViewModel) {
+fun GestionPedidoScreen(navController: NavController, viewModel: PedidoViewModel) {
     val pedidos by viewModel.pedidos.collectAsState()
     val scope = rememberCoroutineScope()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Gestión de Pedidos") }) }
+        topBar = { TopAppBar(title = { Text("Gestión de Pedidos") }) },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { navController.navigate("agregarPedido") },
+                content = { Icon(Icons.Default.Add, contentDescription = "Agregar Pedido") }
+            )
+        }
     ) { padding ->
         LazyColumn(modifier = Modifier.padding(padding)) {
             items(pedidos) { pedido ->
