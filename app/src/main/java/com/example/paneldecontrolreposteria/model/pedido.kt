@@ -8,5 +8,5 @@ data class Pedido(
     val fecha: Date = Date(), // Fecha del pedido
     val productos: List<String> = listOf(),
     val cantidad: Int = 1,
-    val estado: String = "Pendiente"
+    var estado: String = "Pendiente"
 )

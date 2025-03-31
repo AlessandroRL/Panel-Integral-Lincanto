@@ -1,8 +1,5 @@
-package com.example.paneldecontrolreposteria
+package com.example.paneldecontrolreposteria.screens
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,41 +8,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.paneldecontrolreposteria.model.Pedido
-import com.example.paneldecontrolreposteria.viewmodel.PedidoRepository
+import com.example.paneldecontrolreposteria.viewmodel.PedidoViewModel
 import kotlinx.coroutines.launch
-
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            PedidoScreen()
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PedidoScreen() {
-    val pedidos = remember { mutableStateListOf<Pedido>() }
+fun GestionPedidoScreen(viewModel: PedidoViewModel) {
+    val pedidos by viewModel.pedidos.collectAsState()
     val scope = rememberCoroutineScope()
-    val pedidoRepository = remember { PedidoRepository() }
-
-    LaunchedEffect(Unit) {
-        scope.launch {
-            try {
-                val pedidosObtenidos = pedidoRepository.obtenerPedidos()
-                pedidos.clear()
-                pedidos.addAll(pedidosObtenidos)
-            } catch (e: Exception) {
-                println("Error al obtener pedidos: ${e.message}")
-            }
-        }
-    }
 
     Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Gestión de Pedidos") })
-        }
+        topBar = { TopAppBar(title = { Text("Gestión de Pedidos") }) }
     ) { padding ->
         LazyColumn(modifier = Modifier.padding(padding)) {
             items(pedidos) { pedido ->
@@ -61,12 +34,7 @@ fun PedidoScreen() {
                         Text("Estado: ${pedido.estado}")
                         Button(onClick = {
                             scope.launch {
-                                try {
-                                    pedidoRepository.actualizarEstadoPedido(pedido.id, "Entregado")
-                                    pedido.estado = "Entregado"
-                                } catch (e: Exception) {
-                                    println("Error al actualizar estado: ${e.message}")
-                                }
+                                viewModel.actualizarEstadoPedido(pedido.id, "Entregado")
                             }
                         }) {
                             Text("Marcar como Entregado")
@@ -77,4 +45,3 @@ fun PedidoScreen() {
         }
     }
 }
-
