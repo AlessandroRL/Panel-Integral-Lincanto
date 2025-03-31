@@ -61,7 +61,7 @@ fun PedidoScreen() {
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Cliente: ${pedido.cliente}", style = MaterialTheme.typography.titleMedium)
-                        Text("Producto: ${pedido.producto}")
+                        Text("Productos: ${pedido.productos.joinToString(", ")}")
                         Text("Estado: ${pedido.estado}")
                         Button(onClick = {
                             scope.launch {
