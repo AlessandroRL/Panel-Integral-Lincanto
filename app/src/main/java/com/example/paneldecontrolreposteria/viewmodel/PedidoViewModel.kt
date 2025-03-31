@@ -3,7 +3,6 @@ package com.example.paneldecontrolreposteria.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.paneldecontrolreposteria.model.Pedido
-import com.example.paneldecontrolreposteria.viewmodel.PedidoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -24,6 +23,17 @@ class PedidoViewModel : ViewModel() {
         }
     }
 
+    fun agregarPedido(pedido: Pedido) {
+        viewModelScope.launch {
+            try {
+                repository.agregarPedido(pedido)
+                obtenerPedidos() // Refresca la lista después de agregar
+            } catch (e: Exception) {
+                println("Error al agregar pedido: ${e.message}")
+            }
+        }
+    }
+
     fun actualizarEstadoPedido(id: String, nuevoEstado: String) {
         viewModelScope.launch {
             repository.actualizarEstadoPedido(id, nuevoEstado)
@@ -31,4 +41,3 @@ class PedidoViewModel : ViewModel() {
         }
     }
 }
-
