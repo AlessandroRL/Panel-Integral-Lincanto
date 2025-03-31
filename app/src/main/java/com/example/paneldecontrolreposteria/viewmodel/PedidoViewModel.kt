@@ -4,11 +4,12 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.paneldecontrolreposteria.model.Pedido
+import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 class PedidoViewModel : ViewModel() {
     private val repository = PedidoRepository()
@@ -84,4 +85,15 @@ class PedidoViewModel : ViewModel() {
             Log.e("PedidoViewModel", "Error al obtener productos: ${exception.message}")
         }
     }
+
+    fun eliminarPedido(pedidoId: String) {
+        viewModelScope.launch {
+            try {
+                Firebase.firestore.collection("pedidos").document(pedidoId).delete()
+            } catch (e: Exception) {
+                Log.e("PedidoViewModel", "Error al eliminar pedido", e)
+            }
+        }
+    }
+
 }

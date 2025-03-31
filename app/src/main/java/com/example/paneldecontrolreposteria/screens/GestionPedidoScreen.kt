@@ -12,13 +12,19 @@ import com.example.paneldecontrolreposteria.viewmodel.PedidoViewModel
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.navigation.NavHostController
+import androidx.compose.ui.graphics.Color
+import com.example.paneldecontrolreposteria.model.Pedido
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewModel) {
     val pedidos by viewModel.pedidos.collectAsState()
     val scope = rememberCoroutineScope()
+
+    var pedidoAEliminar by remember { mutableStateOf<Pedido?>(null) }
+    var mostrarDialogo by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Gestión de Pedidos") }) },
@@ -43,24 +49,68 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                         var botonDeshabilitado by remember { mutableStateOf(pedido.estado == "Listo para entrega") }
                         val scope = rememberCoroutineScope()
 
-                        Button(
-                            onClick = {
-                                Log.d("Boton", "Se presionó el botón para cambiar estado")
-                                botonDeshabilitado = true
-                                scope.launch {
-                                    val success = viewModel.actualizarEstadoPedido(pedido.id, "Listo para entrega")
-                                    if (!success) {
-                                        botonDeshabilitado = false
-                                    }
-                                }
-                            },
-                            enabled = !botonDeshabilitado
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(if (botonDeshabilitado) "Listo para entrega" else "Marcar como Entregado")
+                            Button(
+                                onClick = {
+                                    Log.d("Boton", "Se presionó el botón para cambiar estado")
+                                    botonDeshabilitado = true
+                                    scope.launch {
+                                        val success = viewModel.actualizarEstadoPedido(pedido.id, "Listo para entrega")
+                                        if (!success) {
+                                            botonDeshabilitado = false
+                                        }
+                                    }
+                                },
+                                enabled = !botonDeshabilitado
+                            ) {
+                                Text(if (botonDeshabilitado) "Listo para entrega" else "Marcar como Entregado")
+                            }
+
+                            IconButton(
+                                onClick = {
+                                    pedidoAEliminar = pedido
+                                    mostrarDialogo = true
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Eliminar Pedido",
+                                    tint = Color.Red
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    // Diálogo de confirmación para eliminar pedido
+    if (mostrarDialogo && pedidoAEliminar != null) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogo = false },
+            title = { Text("Eliminar Pedido") },
+            text = { Text("¿Estás seguro de que quieres eliminar este pedido? Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            viewModel.eliminarPedido(pedidoAEliminar!!.id)
+                            mostrarDialogo = false
+                        }
+                    }
+                ) {
+                    Text("Eliminar", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDialogo = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }
