@@ -1,6 +1,7 @@
 package com.example.paneldecontrolreposteria.viewmodel
 
 import android.util.Log
+import com.example.paneldecontrolreposteria.Producto
 import com.example.paneldecontrolreposteria.model.Pedido
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObjects
@@ -34,32 +35,13 @@ class PedidoRepository {
         db.collection("pedidos").add(pedido).await()
     }
 
-    suspend fun actualizarEstadoPedido(id: String, nuevoEstado: String): Boolean {
+    suspend fun obtenerProductos(): List<Producto> {
         return try {
-            Log.d("PedidoRepository", "Actualizando pedido en Firestore: ID=$id, Estado=$nuevoEstado")
-
-            firestore.collection("pedidos")
-                .document(id)
-                .update("estado", nuevoEstado)
-                .await()
-
-            Log.d("PedidoRepository", "Actualización en Firestore exitosa")
-            true
+            val snapshot = db.collection("productos").get().await()
+            snapshot.toObjects<Producto>()
         } catch (e: Exception) {
-            Log.e("PedidoRepository", "Error Firestore: ${e.message}")
-            false
-        }
-    }
-
-    suspend fun obtenerPedidos(): List<Pedido> {
-        return try {
-            val snapshot = db.collection("pedidos").get().await()
-            snapshot.toObjects<Pedido>()
-        } catch (e: Exception) {
+            Log.e("PedidoRepository", "Error al obtener productos: ${e.message}")
             emptyList()
         }
     }
-
 }
-
-

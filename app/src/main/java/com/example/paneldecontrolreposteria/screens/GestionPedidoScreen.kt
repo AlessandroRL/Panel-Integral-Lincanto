@@ -44,7 +44,9 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                         Text("Cliente: ${pedido.cliente}", style = MaterialTheme.typography.titleMedium)
                         Text("Productos: ${pedido.productos.joinToString(", ")}")
                         Text("Estado: ${pedido.estado}")
-                        Text("Fecha de Registro: ${pedido.fecha}", style = MaterialTheme.typography.bodyMedium)
+                        Text("Tamaño (Cantidad de personas): ${pedido.tamano}", style = MaterialTheme.typography.titleMedium)
+                        Text("Fecha de Registro: ${pedido.fechaRegistro}", style = MaterialTheme.typography.bodyMedium)
+                        Text("Fecha Limite: ${pedido.fechaLimite}", style = MaterialTheme.typography.bodyMedium)
 
                         var botonDeshabilitado by remember { mutableStateOf(pedido.estado == "Listo para entrega") }
                         val scope = rememberCoroutineScope()
@@ -88,7 +90,6 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
         }
     }
 
-    // Diálogo de confirmación para eliminar pedido
     if (mostrarDialogo && pedidoAEliminar != null) {
         AlertDialog(
             onDismissRequest = { mostrarDialogo = false },

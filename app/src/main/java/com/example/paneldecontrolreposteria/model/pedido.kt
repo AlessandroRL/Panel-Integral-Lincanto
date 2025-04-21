@@ -5,8 +5,10 @@ import java.util.Date
 data class Pedido(
     var id: String = "",
     val cliente: String = "",
-    val fecha: Date = Date(),
+    val fechaRegistro: Date = Date(),
     val productos: List<String> = listOf(),
     val cantidad: Int = 1,
-    var estado: String = "Pendiente"
+    var estado: String = "Pendiente",
+    var fechaLimite: String = "",
+    var tamano: Int = 0
 )

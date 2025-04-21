@@ -15,7 +15,8 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
     var cliente by remember { mutableStateOf("") }
     var producto by remember { mutableStateOf("") }
     var cantidad by remember { mutableStateOf("") }
-    var fechaEntrega by remember { mutableStateOf("") }
+    var fechaLimite by remember { mutableStateOf("") }
+    var tamano by remember { mutableStateOf("") }
     var errorMensaje by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
@@ -29,17 +30,61 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
                 label = { Text("Cliente") },
                 isError = errorMensaje != null && cliente.isBlank()
             )
-            OutlinedTextField(
-                value = producto,
-                onValueChange = { producto = it },
-                label = { Text("Producto") },
-                isError = errorMensaje != null && producto.isBlank()
-            )
+            var productosDisponibles by remember { mutableStateOf<List<String>>(emptyList()) }
+            var expanded by remember { mutableStateOf(false) }
+
+            LaunchedEffect(Unit) {
+                viewModel.obtenerNombresProductos { productos ->
+                    productosDisponibles = productos
+                }
+            }
+
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                OutlinedTextField(
+                    readOnly = true,
+                    value = producto,
+                    onValueChange = {},
+                    label = { Text("Producto") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier.menuAnchor(),
+                    isError = errorMensaje != null && producto.isBlank()
+                )
+
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    productosDisponibles.forEach { nombre ->
+                        DropdownMenuItem(
+                            text = { Text(nombre) },
+                            onClick = {
+                                producto = nombre
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
             OutlinedTextField(
                 value = cantidad,
                 onValueChange = { cantidad = it },
                 label = { Text("Cantidad") },
                 isError = errorMensaje != null && cantidad.toIntOrNull() == null
+            )
+            OutlinedTextField(
+                value = tamano,
+                onValueChange = { tamano = it },
+                label = { Text("Tamaño (Cantidad de Personas)") },
+                isError = errorMensaje != null && tamano.isBlank()
+            )
+            OutlinedTextField(
+                value = fechaLimite,
+                onValueChange = { fechaLimite = it },
+                label = { Text("Fecha Limite") },
+                isError = errorMensaje != null && fechaLimite.isBlank()
             )
             if (errorMensaje != null) {
                 Text(errorMensaje!!, color = MaterialTheme.colorScheme.error)

@@ -75,17 +75,6 @@ class PedidoViewModel : ViewModel() {
         }
     }
 
-    fun obtenerListaProductos(onProductosObtenidos: (List<String>) -> Unit) {
-        val productosRef = FirebaseFirestore.getInstance().collection("productos")
-
-        productosRef.get().addOnSuccessListener { result ->
-            val listaProductos = result.documents.mapNotNull { it.getString("nombre") }
-            onProductosObtenidos(listaProductos)
-        }.addOnFailureListener { exception ->
-            Log.e("PedidoViewModel", "Error al obtener productos: ${exception.message}")
-        }
-    }
-
     fun eliminarPedido(pedidoId: String) {
         viewModelScope.launch {
             try {
@@ -96,4 +85,16 @@ class PedidoViewModel : ViewModel() {
         }
     }
 
+    fun obtenerNombresProductos(onResultado: (List<String>) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val productos = repository.obtenerProductos()
+                val nombres = productos.map { it.nombre }
+                onResultado(nombres)
+            } catch (e: Exception) {
+                Log.e("PedidoViewModel", "Error al obtener nombres de productos: ${e.message}")
+                onResultado(emptyList())
+            }
+        }
+    }
 }
