@@ -8,36 +8,56 @@ import androidx.compose.ui.unit.dp
 import com.example.paneldecontrolreposteria.model.Pedido
 import com.example.paneldecontrolreposteria.viewmodel.PedidoViewModel
 import kotlinx.coroutines.launch
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.DropdownMenuItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit) {
     var cliente by remember { mutableStateOf("") }
-    var producto by remember { mutableStateOf("") }
-    var cantidad by remember { mutableStateOf("") }
     var fechaLimite by remember { mutableStateOf("") }
-    var tamano by remember { mutableStateOf("") }
     var errorMensaje by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+
+    data class ProductoSeleccionado(
+        val nombre: String,
+        var cantidad: String,
+        var tamano: String
+    )
+
+    var productosSeleccionados by remember { mutableStateOf(mutableListOf<ProductoSeleccionado>()) }
+
+    var productosDisponibles by remember { mutableStateOf<List<String>>(emptyList()) }
+    var productoActual by remember { mutableStateOf("") }
+    var cantidadActual by remember { mutableStateOf("") }
+    var tamanoActual by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.obtenerNombresProductos { productos ->
+            productosDisponibles = productos
+        }
+    }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Agregar Pedido") }) }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(16.dp)) {
+        Column(modifier = Modifier
+            .padding(padding)
+            .padding(16.dp)
+            .fillMaxSize()) {
+
             OutlinedTextField(
                 value = cliente,
                 onValueChange = { cliente = it },
                 label = { Text("Cliente") },
+                modifier = Modifier.fillMaxWidth(),
                 isError = errorMensaje != null && cliente.isBlank()
             )
-            var productosDisponibles by remember { mutableStateOf<List<String>>(emptyList()) }
-            var expanded by remember { mutableStateOf(false) }
 
-            LaunchedEffect(Unit) {
-                viewModel.obtenerNombresProductos { productos ->
-                    productosDisponibles = productos
-                }
-            }
+            Spacer(modifier = Modifier.height(16.dp))
 
             ExposedDropdownMenuBox(
                 expanded = expanded,
@@ -45,12 +65,14 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
             ) {
                 OutlinedTextField(
                     readOnly = true,
-                    value = producto,
+                    value = productoActual,
                     onValueChange = {},
                     label = { Text("Producto") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier.menuAnchor(),
-                    isError = errorMensaje != null && producto.isBlank()
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    isError = errorMensaje != null && productoActual.isBlank()
                 )
 
                 ExposedDropdownMenu(
@@ -61,39 +83,73 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
                         DropdownMenuItem(
                             text = { Text(nombre) },
                             onClick = {
-                                producto = nombre
+                                productoActual = nombre
                                 expanded = false
                             }
                         )
                     }
                 }
             }
+
             OutlinedTextField(
-                value = cantidad,
-                onValueChange = { cantidad = it },
+                value = cantidadActual,
+                onValueChange = { cantidadActual = it },
                 label = { Text("Cantidad") },
-                isError = errorMensaje != null && cantidad.toIntOrNull() == null
+                modifier = Modifier.fillMaxWidth(),
+                isError = cantidadActual.toIntOrNull() == null
             )
+
             OutlinedTextField(
-                value = tamano,
-                onValueChange = { tamano = it },
+                value = tamanoActual,
+                onValueChange = { tamanoActual = it },
                 label = { Text("Tamaño (Cantidad de Personas)") },
-                isError = errorMensaje != null && tamano.isBlank()
+                modifier = Modifier.fillMaxWidth(),
+                isError = tamanoActual.isBlank()
             )
+
+            Button(
+                onClick = {
+                    if (productoActual.isNotBlank() && cantidadActual.isNotBlank() && tamanoActual.isNotBlank()) {
+                        productosSeleccionados.add(
+                            ProductoSeleccionado(productoActual, cantidadActual, tamanoActual)
+                        )
+                        productoActual = ""
+                        cantidadActual = ""
+                        tamanoActual = ""
+                    }
+                },
+                modifier = Modifier.padding(vertical = 8.dp)
+            ) {
+                Text("Añadir Producto")
+            }
+
+            if (productosSeleccionados.isNotEmpty()) {
+                Text("Productos Agregados:", style = MaterialTheme.typography.titleMedium)
+                productosSeleccionados.forEach {
+                    Text("- ${it.nombre} (${it.cantidad} u, ${it.tamano} personas)")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             OutlinedTextField(
                 value = fechaLimite,
                 onValueChange = { fechaLimite = it },
-                label = { Text("Fecha Limite") },
-                isError = errorMensaje != null && fechaLimite.isBlank()
+                label = { Text("Fecha Límite") },
+                modifier = Modifier.fillMaxWidth(),
+                isError = fechaLimite.isBlank()
             )
+
             if (errorMensaje != null) {
                 Text(errorMensaje!!, color = MaterialTheme.colorScheme.error)
             }
+
             Spacer(modifier = Modifier.height(16.dp))
+
             Button(
                 onClick = {
-                    if (cliente.isBlank() || producto.isBlank() || cantidad.toIntOrNull() == null) {
-                        errorMensaje = "Por favor, complete todos los campos correctamente."
+                    if (cliente.isBlank() || productosSeleccionados.isEmpty() || fechaLimite.isBlank()) {
+                        errorMensaje = "Por favor, complete todos los campos obligatorios."
                         return@Button
                     }
                     scope.launch {
@@ -101,9 +157,12 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
                             val nuevoPedido = Pedido(
                                 id = "",
                                 cliente = cliente,
-                                productos = listOf(producto),
-                                cantidad = cantidad.toInt(),
-                                estado = "Pendiente"
+                                productos = productosSeleccionados.map {
+                                    "${it.nombre} - ${it.cantidad} u - ${it.tamano} personas"
+                                },
+                                cantidad = productosSeleccionados.sumOf { it.cantidad.toIntOrNull() ?: 0 },
+                                estado = "Pendiente",
+                                fechaLimite = fechaLimite
                             )
                             viewModel.agregarPedido(nuevoPedido)
                             onPedidoAgregado()
@@ -111,7 +170,8 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
                             errorMensaje = "Error al agregar pedido: ${e.message}"
                         }
                     }
-                }
+                },
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Agregar Pedido")
             }
