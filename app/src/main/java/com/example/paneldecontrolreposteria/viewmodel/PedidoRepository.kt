@@ -44,4 +44,29 @@ class PedidoRepository {
             emptyList()
         }
     }
+
+    suspend fun editarPedido(pedido: Pedido): Boolean {
+        return try {
+            val datosActualizados = mapOf(
+                "cliente" to pedido.cliente,
+                "productos" to pedido.productos,
+                "cantidad" to pedido.cantidad,
+                "estado" to pedido.estado,
+                "fechaLimite" to pedido.fechaLimite,
+                "tamano" to pedido.tamano
+            )
+
+            FirebaseFirestore.getInstance()
+                .collection("pedidos")
+                .document(pedido.id)
+                .update(datosActualizados)
+                .await()
+
+            true
+        } catch (e: Exception) {
+            Log.e("PedidoRepository", "Error al editar pedido: ${e.message}")
+            false
+        }
+    }
+
 }

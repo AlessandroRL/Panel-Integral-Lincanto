@@ -10,5 +10,5 @@ data class Pedido(
     val cantidad: Int = 1,
     var estado: String = "Pendiente",
     var fechaLimite: String = "",
-    var tamano: Int = 0
+    var tamano: Int = 1
 )

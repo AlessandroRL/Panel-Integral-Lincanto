@@ -78,12 +78,23 @@ class PedidoViewModel : ViewModel() {
     fun eliminarPedido(pedidoId: String) {
         viewModelScope.launch {
             try {
-                Firebase.firestore.collection("pedidos").document(pedidoId).delete()
+                FirebaseFirestore.getInstance()
+                    .collection("pedidos")
+                    .document(pedidoId)
+                    .delete()
+                    .addOnSuccessListener {
+                        Log.d("Firebase", "Pedido eliminado correctamente")
+                        obtenerPedidos()
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("Firebase", "Error al eliminar pedido", e)
+                    }
             } catch (e: Exception) {
-                Log.e("PedidoViewModel", "Error al eliminar pedido", e)
+                Log.e("Firebase", "Error en la eliminación", e)
             }
         }
     }
+
 
     fun obtenerNombresProductos(onResultado: (List<String>) -> Unit) {
         viewModelScope.launch {
@@ -97,4 +108,13 @@ class PedidoViewModel : ViewModel() {
             }
         }
     }
+
+    fun editarPedido(pedido: Pedido, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val result = repository.editarPedido(pedido)
+            if (result) obtenerPedidos()
+            onResult(result)
+        }
+    }
+
 }

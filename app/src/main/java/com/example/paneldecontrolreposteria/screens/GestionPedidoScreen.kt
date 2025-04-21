@@ -44,9 +44,9 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                         Text("Cliente: ${pedido.cliente}", style = MaterialTheme.typography.titleMedium)
                         Text("Productos: ${pedido.productos.joinToString(", ")}")
                         Text("Estado: ${pedido.estado}")
-                        Text("Tamaño (Cantidad de personas): ${pedido.tamano}", style = MaterialTheme.typography.titleMedium)
+                        Text("Tamaño (Cantidad de personas): ${pedido.tamano}")
                         Text("Fecha de Registro: ${pedido.fechaRegistro}", style = MaterialTheme.typography.bodyMedium)
-                        Text("Fecha Limite: ${pedido.fechaLimite}", style = MaterialTheme.typography.bodyMedium)
+                        Text("Fecha Limite: ${pedido.fechaLimite}")
 
                         var botonDeshabilitado by remember { mutableStateOf(pedido.estado == "Listo para entrega") }
                         val scope = rememberCoroutineScope()
@@ -69,6 +69,14 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                                 enabled = !botonDeshabilitado
                             ) {
                                 Text(if (botonDeshabilitado) "Listo para entrega" else "Marcar como Entregado")
+                            }
+
+                            Button(
+                                onClick = {
+                                    navController.navigate("editarPedido/${pedido.id}")
+                                }
+                            ) {
+                                Text("Editar")
                             }
 
                             IconButton(

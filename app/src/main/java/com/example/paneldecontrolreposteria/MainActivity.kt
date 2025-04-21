@@ -1,5 +1,7 @@
 package com.example.paneldecontrolreposteria
 
+import EditarPedidoScreen
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,6 +27,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@SuppressLint("StateFlowValueCalledInComposition")
 @Composable
 fun AppNavigation(viewModel: PedidoViewModel) {
     val navController: NavHostController = rememberNavController()
@@ -32,6 +35,18 @@ fun AppNavigation(viewModel: PedidoViewModel) {
     NavHost(navController = navController, startDestination = "gestionPedidos") {
         composable("gestionPedidos") { GestionPedidoScreen(navController, viewModel) }
         composable("agregarPedido") { AgregarPedidoScreen(viewModel) { navController.popBackStack() } }
+        composable("editarPedido/{pedidoId}") { backStackEntry ->
+            val pedidoId = backStackEntry.arguments?.getString("pedidoId")
+            val pedido = viewModel.pedidos.value.find { it.id == pedidoId }
+
+            if (pedido != null) {
+                EditarPedidoScreen(viewModel, pedido) {
+                    navController.popBackStack()
+                }
+            } else {
+                Text("Pedido no encontrado.")
+            }
+        }
     }
 }
 
