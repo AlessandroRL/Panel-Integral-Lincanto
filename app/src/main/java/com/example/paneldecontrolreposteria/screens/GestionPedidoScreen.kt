@@ -16,6 +16,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.navigation.NavHostController
 import androidx.compose.ui.graphics.Color
 import com.example.paneldecontrolreposteria.model.Pedido
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +47,11 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                         Text("Productos: ${pedido.productos.joinToString(", ")}")
                         Text("Estado: ${pedido.estado}")
                         Text("Tamaño (Cantidad de personas): ${pedido.tamano}")
-                        Text("Fecha de Registro: ${pedido.fechaRegistro}", style = MaterialTheme.typography.bodyMedium)
+
+                        val formatoFecha = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
+                        val fechaFormateada = remember(pedido.fechaRegistro) { formatoFecha.format(pedido.fechaRegistro) }
+
+                        Text("Fecha de Registro: $fechaFormateada", style = MaterialTheme.typography.bodyMedium)
                         Text("Fecha Limite: ${pedido.fechaLimite}")
 
                         var botonDeshabilitado by remember { mutableStateOf(pedido.estado == "Listo para entrega") }

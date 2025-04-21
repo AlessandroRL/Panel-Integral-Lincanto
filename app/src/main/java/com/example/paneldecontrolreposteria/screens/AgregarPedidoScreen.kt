@@ -12,6 +12,10 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.DropdownMenuItem
+import android.app.DatePickerDialog
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.LocalContext
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -132,13 +136,41 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = fechaLimite,
-                onValueChange = { fechaLimite = it },
-                label = { Text("Fecha Límite") },
-                modifier = Modifier.fillMaxWidth(),
-                isError = fechaLimite.isBlank()
-            )
+            val context = LocalContext.current
+            val calendar = Calendar.getInstance()
+            val year = calendar.get(Calendar.YEAR)
+            val month = calendar.get(Calendar.MONTH)
+            val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+            val datePickerDialog = remember {
+                DatePickerDialog(
+                    context,
+                    { _, selectedYear, selectedMonth, selectedDay ->
+                        fechaLimite = String.format("%04d-%02d-%02d", selectedYear, selectedMonth + 1, selectedDay)
+                    },
+                    year,
+                    month,
+                    day
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+                    .clickable { datePickerDialog.show() }
+            ) {
+                OutlinedTextField(
+                    value = fechaLimite,
+                    onValueChange = {},
+                    label = { Text("Fecha Límite") },
+                    readOnly = true,
+                    enabled = false,
+                    isError = errorMensaje != null && fechaLimite.isBlank(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
 
             if (errorMensaje != null) {
                 Text(errorMensaje!!, color = MaterialTheme.colorScheme.error)
