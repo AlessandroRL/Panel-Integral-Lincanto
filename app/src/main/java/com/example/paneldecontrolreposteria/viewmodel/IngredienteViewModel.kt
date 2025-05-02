@@ -30,9 +30,9 @@ class IngredienteViewModel : ViewModel() {
         }
     }
 
-    fun actualizarIngrediente(ingrediente: Ingrediente) {
+    fun editarIngrediente(ingrediente: Ingrediente) {
         viewModelScope.launch {
-            repository.actualizarIngrediente(ingrediente)
+            repository.agregarIngrediente(ingrediente) // Reutilizamos set con el mismo ID
             cargarIngredientes()
         }
     }

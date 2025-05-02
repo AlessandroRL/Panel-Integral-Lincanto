@@ -23,7 +23,7 @@ class IngredienteRepository {
     }
 
     suspend fun agregarIngrediente(ingrediente: Ingrediente) {
-        collection.add(ingrediente).await()
+        collection.document(ingrediente.nombre).set(ingrediente).await()
     }
 
     suspend fun actualizarIngrediente(ingrediente: Ingrediente) {
