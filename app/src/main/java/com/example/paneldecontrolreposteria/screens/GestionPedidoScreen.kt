@@ -157,7 +157,13 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                             ) {
                                 Text(if (botonDeshabilitado) "Listo para entrega" else "Marcar como Entregado")
                             }
-
+                            Button(
+                                onClick = {
+                                    navController.navigate("editarPedido/${pedido.id}")
+                                }
+                            ) {
+                                Text("Editar")
+                            }
                             IconButton(onClick = {
                                 pedidoAEliminar = pedido
                                 mostrarDialogo = true

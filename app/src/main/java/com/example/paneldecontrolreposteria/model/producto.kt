@@ -1,4 +1,4 @@
-package com.example.paneldecontrolreposteria
+package com.example.paneldecontrolreposteria.model
 
 data class Producto(
     val id: String = "",

@@ -1,19 +1,16 @@
 package com.example.paneldecontrolreposteria.viewmodel
 
 import android.util.Log
-import com.example.paneldecontrolreposteria.Producto
+import com.example.paneldecontrolreposteria.model.Producto
 import com.example.paneldecontrolreposteria.model.Pedido
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObjects
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 
 class PedidoRepository {
     private val db = FirebaseFirestore.getInstance()
-    private val firestore = FirebaseFirestore.getInstance()
     private val _pedidos = MutableStateFlow<List<Pedido>>(emptyList())
-    val pedidos: StateFlow<List<Pedido>> = _pedidos
 
     init {
         observarPedidos()
