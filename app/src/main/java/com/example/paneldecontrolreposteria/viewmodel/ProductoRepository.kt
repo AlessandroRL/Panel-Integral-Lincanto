@@ -6,17 +6,21 @@ import com.example.paneldecontrolreposteria.model.Producto
 import kotlinx.coroutines.tasks.await
 
 class ProductoRepository {
-
     private val db = FirebaseFirestore.getInstance()
     private val productosRef = db.collection("productos")
 
-    suspend fun agregarProducto(producto: Producto) {
-        productosRef.document(producto.id).set(producto).await()
+    suspend fun obtenerProductos(): List<Producto> {
+        return try {
+            productosRef.get().await().documents.mapNotNull { doc ->
+                doc.toObject<Producto>()?.copy(id = doc.id)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
-    suspend fun obtenerProductos(): List<Producto> {
-        val snapshot = productosRef.get().await()
-        return snapshot.documents.mapNotNull { it.toObject<Producto>()?.copy(id = it.id) }
+    suspend fun agregarProducto(producto: Producto) {
+        productosRef.document(producto.nombre).set(producto).await()
     }
 
     suspend fun eliminarProducto(id: String) {
