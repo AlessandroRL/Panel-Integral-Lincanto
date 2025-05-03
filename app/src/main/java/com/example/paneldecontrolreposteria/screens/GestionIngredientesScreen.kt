@@ -11,13 +11,38 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.paneldecontrolreposteria.model.Ingrediente
 import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import kotlinx.coroutines.launch
 
+@Composable
+fun GestionIngredientesScreen() {
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val tabs = listOf("Ingredientes", "Productos")
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(selectedTabIndex = selectedTabIndex) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { selectedTabIndex = index },
+                    text = { Text(title) }
+                )
+            }
+        }
+
+        when (selectedTabIndex) {
+            0 -> GestionarIngredientes()
+            1 -> GestionarProductos()
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GestionIngredientesScreen(viewModel: IngredienteViewModel) {
+fun GestionarIngredientes() {
+    val viewModel: IngredienteViewModel = viewModel()
     val ingredientes by viewModel.ingredientes.collectAsState()
     var nombre by remember { mutableStateOf("") }
     var unidad by remember { mutableStateOf("") }
@@ -200,5 +225,12 @@ fun GestionIngredientesScreen(viewModel: IngredienteViewModel) {
                 }
             }
         )
+    }
+}
+
+@Composable
+fun GestionarProductos() {
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text("Gestión de Productos (En desarrollo)", style = MaterialTheme.typography.titleLarge)
     }
 }

@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
                 Box(modifier = Modifier.padding(padding)) {
                     when (selectedIndex.intValue) {
                         0 -> AppNavigation(viewModel = pedidoViewModel) // Panel de gestión de pedidos
-                        1 -> GestionIngredientesScreen(ingredienteViewModel)  // Gestión de ingredientes, productos y costos
+                        1 -> GestionIngredientesScreen()  // Gestión de ingredientes, productos y costos
                         2 -> Text("Asistente Virtual (en desarrollo)")
                     }
                 }
@@ -143,7 +143,7 @@ fun MainApp(
                 AppNavigation(pedidoViewModel)
             }
             composable("gestionIngredientes") {
-                GestionIngredientesScreen(viewModel = ingredienteViewModel)
+                GestionIngredientesScreen()
             }
             composable("asistenteVirtual") {
                 Text("Aquí irá el asistente virtual con IA") // Temporal
