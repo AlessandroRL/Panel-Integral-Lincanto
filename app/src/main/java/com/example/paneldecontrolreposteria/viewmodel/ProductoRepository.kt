@@ -4,6 +4,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObject
 import com.example.paneldecontrolreposteria.model.Producto
 import kotlinx.coroutines.tasks.await
+import android.util.Log
 
 class ProductoRepository {
     private val db = FirebaseFirestore.getInstance()
@@ -28,6 +29,11 @@ class ProductoRepository {
     }
 
     suspend fun actualizarProducto(producto: Producto) {
-        productosRef.document(producto.id).set(producto).await()
+        try {
+            db.collection("productos").document(producto.nombre).set(producto).await()
+        } catch (e: Exception) {
+            Log.e("ProductoRepository", "Error al actualizar producto", e)
+            throw e
+        }
     }
 }

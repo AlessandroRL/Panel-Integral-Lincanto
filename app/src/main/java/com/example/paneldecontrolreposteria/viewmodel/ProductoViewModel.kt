@@ -1,5 +1,6 @@
 package com.example.paneldecontrolreposteria.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.paneldecontrolreposteria.model.Producto
@@ -38,8 +39,13 @@ class ProductoViewModel : ViewModel() {
 
     fun actualizarProducto(producto: Producto) {
         viewModelScope.launch {
-            repo.actualizarProducto(producto)
-            cargarProductos()
+            try {
+                repo.actualizarProducto(producto)
+                repo.obtenerProductos()
+            } catch (e: Exception) {
+                Log.e("ProductoViewModel", "Error al actualizar producto", e)
+            }
         }
     }
+
 }
