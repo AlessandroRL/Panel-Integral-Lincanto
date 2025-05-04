@@ -1,7 +1,6 @@
 package com.example.paneldecontrolreposteria.viewmodel
 
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ktx.toObject
 import com.example.paneldecontrolreposteria.model.Producto
 import kotlinx.coroutines.tasks.await
 import android.util.Log
@@ -13,9 +12,41 @@ class ProductoRepository {
     suspend fun obtenerProductos(): List<Producto> {
         return try {
             productosRef.get().await().documents.mapNotNull { doc ->
-                doc.toObject<Producto>()?.copy(id = doc.id)
+                val nombre = doc.getString("nombre") ?: return@mapNotNull null
+
+                val ingredientes = mutableListOf<String>()
+                val keys = doc.data?.keys ?: emptySet()
+                keys.filter { it.lowercase().startsWith("ingredientes") }.forEach { key ->
+                    val grupo = doc.get(key) as? List<*>
+                    grupo?.forEach { item ->
+                        item?.toString()?.let { ingredientes.add(it) }
+                    }
+                }
+
+                val preparacion = doc.getString("preparacion")
+
+                val utensilios = when (val utensiliosData = doc.get("utensilios")) {
+                    is List<*> -> utensiliosData.mapNotNull { it?.toString() }
+                    is String -> utensiliosData.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                    else -> null
+                }
+
+                val tips = doc.getString("tips")
+                    ?: doc.getString("notas adicionales")
+                    ?: doc.getString("nota")
+                    ?: doc.getString("notas")
+
+                Producto(
+                    id = doc.id,
+                    nombre = nombre,
+                    ingredientes = ingredientes,
+                    preparacion = preparacion,
+                    utensilios = utensilios,
+                    tips = tips
+                )
             }
         } catch (e: Exception) {
+            Log.e("ProductoRepository", "Error al obtener productos", e)
             emptyList()
         }
     }
@@ -30,7 +61,7 @@ class ProductoRepository {
 
     suspend fun actualizarProducto(producto: Producto) {
         try {
-            db.collection("productos").document(producto.nombre).set(producto).await()
+            productosRef.document(producto.nombre).set(producto).await()
         } catch (e: Exception) {
             Log.e("ProductoRepository", "Error al actualizar producto", e)
             throw e

@@ -8,15 +8,13 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.paneldecontrolreposteria.model.Ingrediente
 import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
+import com.example.paneldecontrolreposteria.ui.productos.GestionarProductos
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
 import kotlinx.coroutines.launch
 
@@ -24,6 +22,7 @@ import kotlinx.coroutines.launch
 fun GestionIngredientesScreen() {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Ingredientes", "Productos")
+    val productoViewModel: ProductoViewModel = viewModel()
 
     Column(modifier = Modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = selectedTabIndex) {
@@ -38,7 +37,7 @@ fun GestionIngredientesScreen() {
 
         when (selectedTabIndex) {
             0 -> GestionarIngredientes()
-            1 -> GestionarProductos()
+            1 -> GestionarProductos(productoViewModel)
         }
     }
 }
@@ -228,74 +227,5 @@ fun GestionarIngredientes() {
                 }
             }
         )
-    }
-}
-
-@Composable
-fun GestionarProductos() {
-    val viewModel: ProductoViewModel = viewModel()
-    val productos by viewModel.productos.collectAsState()
-
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "Gestión de Productos",
-            fontWeight = FontWeight.Bold,
-            fontSize = 18.sp,
-            modifier = Modifier.padding(16.dp)
-        )
-
-        LazyColumn(modifier = Modifier.fillMaxHeight(0.8f)) {
-            items(productos) { producto ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Nombre: ${producto.nombre}", fontWeight = FontWeight.Bold)
-
-                        producto.ingredientes.forEachIndexed { index, grupo ->
-                            Text("Grupo ${index + 1}: ${grupo.joinToString(", ")}")
-                        }
-
-                        producto.preparacion?.let {
-                            Text("Preparación: $it")
-                        }
-
-                        producto.utensilios?.let {
-                            Text("Utensilios: $it")
-                        }
-
-                        producto.tips?.let {
-                            Text("Tips: $it")
-                        }
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            IconButton(onClick = { viewModel.eliminarProducto(producto.id) }) {
-                                Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar")
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Button(
-            onClick = {
-            },
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(bottom = 16.dp)
-        ) {
-            Text("Agregar Producto")
-        }
     }
 }

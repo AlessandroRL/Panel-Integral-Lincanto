@@ -132,9 +132,9 @@ fun DialogoAgregarProducto(
                 onGuardar(
                     Producto(
                         nombre = nombre,
-                        ingredientes = listaIngredientes,
+                        ingredientes = listaIngredientes.flatten(),
                         preparacion = if (preparacion.isBlank()) null else preparacion,
-                        utensilios = if (utensilios.isBlank()) null else utensilios,
+                        utensilios = if (utensilios.isEmpty()) null else utensilios.split(",").map { it.trim() },
                         tips = if (tips.isBlank()) null else tips
                     )
                 )
