@@ -41,11 +41,10 @@ class ProductoViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 repo.actualizarProducto(producto)
-                repo.obtenerProductos()
+                cargarProductos()
             } catch (e: Exception) {
                 Log.e("ProductoViewModel", "Error al actualizar producto", e)
             }
         }
     }
-
 }

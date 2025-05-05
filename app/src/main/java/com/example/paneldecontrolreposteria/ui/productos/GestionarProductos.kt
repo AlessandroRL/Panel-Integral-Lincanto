@@ -4,6 +4,9 @@ import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -11,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.ui.text.font.FontWeight
 import com.example.paneldecontrolreposteria.model.Producto
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
 
@@ -29,33 +33,69 @@ fun GestionarProductos(viewModel: ProductoViewModel) {
         Spacer(modifier = Modifier.height(16.dp))
 
         val listaProductos by viewModel.productos.collectAsState()
+        val productosOrdenados = listaProductos.sortedBy { it.nombre.lowercase() }
         var mostrarDialogoEditar by remember { mutableStateOf(false) }
         var productoParaEditar by remember { mutableStateOf<Producto?>(null) }
+        val scrollState = rememberLazyListState()
 
-        LazyColumn {
-            items(listaProductos) { producto ->
+        LazyColumn(state = scrollState) {
+            items(productosOrdenados) { producto ->
                 Card(modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)) {
 
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("🍰 ${producto.nombre}", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "🍰 ${producto.nombre}",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Conjuntos de ingredientes: ${producto.ingredientes.size}")
+
+                        Text(
+                            "Ingredientes:",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        producto.ingredientes.forEachIndexed { index, ingrediente ->
+                            Text("${index + 1}. $ingrediente", style = MaterialTheme.typography.bodyMedium)
+                        }
 
                         producto.preparacion?.let {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "Preparación:",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.primary
+                            )
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("Preparación: $it")
+                            Text(
+                                it,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
 
                         producto.utensilios?.let {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "Utensilios:",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.primary
+                            )
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("Utensilios: $it")
+                            Text(it.joinToString("\n"), style = MaterialTheme.typography.bodyMedium)
                         }
 
                         producto.tips?.let {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "Tips:",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.primary
+                            )
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("Tips: $it")
+                            Text(it, style = MaterialTheme.typography.bodyMedium)
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -70,7 +110,7 @@ fun GestionarProductos(viewModel: ProductoViewModel) {
                                 Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar")
                             }
                             IconButton(onClick = {
-                                viewModel.eliminarProducto(producto.nombre)
+                                viewModel.eliminarProducto(producto.id)
                             }) {
                                 Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar")
                             }
@@ -86,8 +126,8 @@ fun GestionarProductos(viewModel: ProductoViewModel) {
                 onDismiss = { mostrarDialogoEditar = false },
                 onGuardar = { productoEditado ->
                     viewModel.actualizarProducto(productoEditado)
+                    mostrarDialogoEditar = false
                 }
-
             )
         }
     }
@@ -95,7 +135,7 @@ fun GestionarProductos(viewModel: ProductoViewModel) {
     if (showDialog) {
         DialogoAgregarProducto(
             onDismiss = { showDialog = false },
-            onGuardar = { producto ->
+            onAgregar = { producto ->
                 viewModel.agregarProducto(producto)
                 showDialog = false
             }
@@ -107,39 +147,41 @@ fun GestionarProductos(viewModel: ProductoViewModel) {
 @Composable
 fun DialogoAgregarProducto(
     onDismiss: () -> Unit,
-    onGuardar: (Producto) -> Unit
+    onAgregar: (Producto) -> Unit
 ) {
     var nombre by remember { mutableStateOf("") }
-    var ingredientes1 by remember { mutableStateOf(mutableListOf<String>()) }
-    var nuevoIng1 by remember { mutableStateOf("") }
-
-    var ingredientes2 by remember { mutableStateOf(mutableListOf<String>()) }
-    var nuevoIng2 by remember { mutableStateOf("") }
-
+    var ingredientesTexto by remember { mutableStateOf("") }
     var preparacion by remember { mutableStateOf("") }
-    var utensilios by remember { mutableStateOf("") }
+    var utensiliosTexto by remember { mutableStateOf("") }
     var tips by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nuevo Producto") },
         confirmButton = {
-            Button(onClick = {
-                val listaIngredientes = mutableListOf<List<String>>()
-                if (ingredientes1.isNotEmpty()) listaIngredientes.add(ingredientes1)
-                if (ingredientes2.isNotEmpty()) listaIngredientes.add(ingredientes2)
+            Button(
+                onClick = {
+                    val ingredientes = ingredientesTexto
+                        .split("\n")
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
 
-                onGuardar(
-                    Producto(
-                        nombre = nombre,
-                        ingredientes = listaIngredientes.flatten(),
-                        preparacion = if (preparacion.isBlank()) null else preparacion,
-                        utensilios = if (utensilios.isEmpty()) null else utensilios.split(",").map { it.trim() },
-                        tips = if (tips.isBlank()) null else tips
+                    val utensilios = utensiliosTexto
+                        .split("\n")
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+
+                    val producto = Producto(
+                        nombre = nombre.trim(),
+                        ingredientes = ingredientes,
+                        preparacion = preparacion.trim(),
+                        utensilios = utensilios,
+                        tips = tips.trim()
                     )
-                )
-            }) {
-                Text("Guardar")
+                    onAgregar(producto)
+                    onDismiss()
+                }
+            ) {
+                Text("Agregar")
             }
         },
         dismissButton = {
@@ -147,50 +189,43 @@ fun DialogoAgregarProducto(
                 Text("Cancelar")
             }
         },
+        title = { Text("Nuevo Producto") },
         text = {
-            Column {
-                OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre") })
-
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Conjunto 1 de ingredientes:")
-                ingredientes1.forEach { Text("- $it") }
-                Row {
-                    OutlinedTextField(
-                        value = nuevoIng1,
-                        onValueChange = { nuevoIng1 = it },
-                        label = { Text("Ingrediente") },
-                        modifier = Modifier.weight(1f)
-                    )
-                    Button(onClick = {
-                        if (nuevoIng1.isNotBlank()) {
-                            ingredientes1.add(nuevoIng1)
-                            nuevoIng1 = ""
-                        }
-                    }) { Text("+") }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Conjunto 2 de ingredientes (opcional):")
-                ingredientes2.forEach { Text("- $it") }
-                Row {
-                    OutlinedTextField(
-                        value = nuevoIng2,
-                        onValueChange = { nuevoIng2 = it },
-                        label = { Text("Ingrediente") },
-                        modifier = Modifier.weight(1f)
-                    )
-                    Button(onClick = {
-                        if (nuevoIng2.isNotBlank()) {
-                            ingredientes2.add(nuevoIng2)
-                            nuevoIng2 = ""
-                        }
-                    }) { Text("+") }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = preparacion, onValueChange = { preparacion = it }, label = { Text("Preparación") })
-                OutlinedTextField(value = utensilios, onValueChange = { utensilios = it }, label = { Text("Utensilios") })
-                OutlinedTextField(value = tips, onValueChange = { tips = it }, label = { Text("Tips o notas") })
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                OutlinedTextField(
+                    value = nombre,
+                    onValueChange = { nombre = it },
+                    label = { Text("Nombre (usa guión si es subproducto)") },
+                    singleLine = true
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = ingredientesTexto,
+                    onValueChange = { ingredientesTexto = it },
+                    label = { Text("Ingredientes (uno por línea)") },
+                    modifier = Modifier.height(150.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = preparacion,
+                    onValueChange = { preparacion = it },
+                    label = { Text("Preparación (opcional)") },
+                    modifier = Modifier.height(120.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = utensiliosTexto,
+                    onValueChange = { utensiliosTexto = it },
+                    label = { Text("Utensilios (uno por línea, opcional)") },
+                    modifier = Modifier.height(100.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = tips,
+                    onValueChange = { tips = it },
+                    label = { Text("Tips (opcional)") },
+                    modifier = Modifier.height(80.dp)
+                )
             }
         }
     )

@@ -14,14 +14,7 @@ class ProductoRepository {
             productosRef.get().await().documents.mapNotNull { doc ->
                 val nombre = doc.getString("nombre") ?: return@mapNotNull null
 
-                val ingredientes = mutableListOf<String>()
-                val keys = doc.data?.keys ?: emptySet()
-                keys.filter { it.lowercase().startsWith("ingredientes") }.forEach { key ->
-                    val grupo = doc.get(key) as? List<*>
-                    grupo?.forEach { item ->
-                        item?.toString()?.let { ingredientes.add(it) }
-                    }
-                }
+                val ingredientes = (doc.get("ingredientes") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
 
                 val preparacion = doc.getString("preparacion")
 
