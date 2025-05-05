@@ -1,6 +1,9 @@
 package com.example.paneldecontrolreposteria.ui.productos
 
 import android.annotation.SuppressLint
+import android.os.Build
+import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,10 +17,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import com.example.paneldecontrolreposteria.model.Producto
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun GestionarProductos(viewModel: ProductoViewModel) {
     var showDialog by remember { mutableStateOf(false) }
@@ -120,13 +125,24 @@ fun GestionarProductos(viewModel: ProductoViewModel) {
             }
         }
 
+        val context = LocalContext.current
+
         if (mostrarDialogoEditar && productoParaEditar != null) {
             DialogEditarProducto(
                 producto = productoParaEditar!!,
                 onDismiss = { mostrarDialogoEditar = false },
                 onGuardar = { productoEditado ->
-                    viewModel.actualizarProducto(productoEditado)
-                    mostrarDialogoEditar = false
+                    viewModel.actualizarProducto(
+                        nombreOriginal = productoParaEditar!!.nombre,
+                        productoEditado = productoEditado
+                    ) { exito ->
+                        if (exito) {
+                            Toast.makeText(context, "Producto actualizado", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Error al actualizar", Toast.LENGTH_SHORT).show()
+                        }
+                        mostrarDialogoEditar = false
+                    }
                 }
             )
         }

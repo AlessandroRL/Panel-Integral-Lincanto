@@ -1,5 +1,7 @@
 ﻿package com.example.paneldecontrolreposteria.screens
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,6 +20,7 @@ import com.example.paneldecontrolreposteria.ui.productos.GestionarProductos
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
 import kotlinx.coroutines.launch
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun GestionIngredientesScreen() {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
