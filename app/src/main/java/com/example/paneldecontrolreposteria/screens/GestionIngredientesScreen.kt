@@ -15,8 +15,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.paneldecontrolreposteria.model.Ingrediente
+import com.example.paneldecontrolreposteria.ui.costos.GestionarCostos
 import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import com.example.paneldecontrolreposteria.ui.productos.GestionarProductos
+import com.example.paneldecontrolreposteria.viewmodel.ProductoCostoViewModel
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
 import kotlinx.coroutines.launch
 
@@ -24,8 +26,10 @@ import kotlinx.coroutines.launch
 @Composable
 fun GestionIngredientesScreen() {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Ingredientes", "Productos")
+    val tabs = listOf("Ingredientes", "Productos", "Costos")
+
     val productoViewModel: ProductoViewModel = viewModel()
+    val costoViewModel: ProductoCostoViewModel = viewModel()
 
     Column(modifier = Modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = selectedTabIndex) {
@@ -41,6 +45,7 @@ fun GestionIngredientesScreen() {
         when (selectedTabIndex) {
             0 -> GestionarIngredientes()
             1 -> GestionarProductos(productoViewModel)
+            2 -> GestionarCostos(costoViewModel)
         }
     }
 }
