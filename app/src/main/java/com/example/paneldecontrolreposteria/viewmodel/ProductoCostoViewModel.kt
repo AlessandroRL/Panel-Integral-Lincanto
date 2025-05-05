@@ -87,4 +87,52 @@ class ProductoCostoViewModel : ViewModel() {
             }
         }
     }
+
+    fun eliminarProductoCosto(nombreProducto: String, onResult: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val snapshot = db.collection("productosCosto")
+                    .whereEqualTo("nombre", nombreProducto)
+                    .get()
+                    .await()
+
+                if (!snapshot.isEmpty) {
+                    val docId = snapshot.documents.first().id
+                    db.collection("productosCosto").document(docId).delete().await()
+                    cargarProductosCosto()
+                    onResult(true)
+                } else {
+                    onResult(false)
+                }
+            } catch (e: Exception) {
+                Log.e("ProductoCostoViewModel", "Error al eliminar: ${e.message}")
+                onResult(false)
+            }
+        }
+    }
+
+    fun editarProductoCosto(nombreOriginal: String, productoEditado: ProductoCosto, onResult: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val snapshot = db.collection("productosCosto")
+                    .whereEqualTo("nombre", nombreOriginal)
+                    .get()
+                    .await()
+
+                if (!snapshot.isEmpty) {
+                    val docId = snapshot.documents.first().id
+                    db.collection("productosCosto").document(docId)
+                        .set(productoEditado)
+                        .await()
+                    cargarProductosCosto() // Refresca datos
+                    onResult(true)
+                } else {
+                    onResult(false)
+                }
+            } catch (e: Exception) {
+                Log.e("ProductoCostoViewModel", "Error al editar: ${e.message}")
+                onResult(false)
+            }
+        }
+    }
 }

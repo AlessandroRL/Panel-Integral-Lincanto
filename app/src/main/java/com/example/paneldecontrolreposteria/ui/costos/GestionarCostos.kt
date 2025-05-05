@@ -28,6 +28,8 @@ fun GestionarCostos(costoViewModel: ProductoCostoViewModel) {
     val productos by viewModel.productosCosto.collectAsState()
     val context = LocalContext.current
     var mostrarDialogo by remember { mutableStateOf(false) }
+    var mostrarDialogoEditar by remember { mutableStateOf(false) }
+    var productoParaEditar by remember { mutableStateOf<ProductoCosto?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.cargarProductosCosto()
@@ -45,11 +47,42 @@ fun GestionarCostos(costoViewModel: ProductoCostoViewModel) {
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(productos) { producto ->
-                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Nombre: ${producto.nombre}", style = MaterialTheme.typography.titleMedium)
                         Text("Costo total: $${producto.costoTotal}")
                         Text("Fecha: ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(producto.fechaCreacion)}")
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            Button(
+                                onClick = {
+                                    productoParaEditar = producto
+                                    mostrarDialogoEditar = true
+                                },
+                                modifier = Modifier.padding(end = 8.dp)
+                            ) {
+                                Text("Editar")
+                            }
+
+                            Button(
+                                onClick = {
+                                    viewModel.eliminarProductoCosto(producto.nombre) {
+                                        // Acción opcional tras eliminar
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Text("Eliminar")
+                            }
+                        }
                     }
                 }
             }
@@ -69,6 +102,21 @@ fun GestionarCostos(costoViewModel: ProductoCostoViewModel) {
             }
         )
     }
+
+    if (mostrarDialogoEditar && productoParaEditar != null) {
+        DialogEditarProductoCosto(
+            producto = productoParaEditar!!,
+            ingredientesDisponibles = ingredientesDisponibles,
+            onDismiss = { mostrarDialogoEditar = false },
+            onGuardar = { productoEditado ->
+                viewModel.editarProductoCosto(productoParaEditar!!.nombre, productoEditado) {
+                    mostrarDialogoEditar = false
+                    productoParaEditar = null
+                }
+            }
+        )
+    }
+
 }
 
 @Composable
