@@ -2,6 +2,7 @@ package com.example.paneldecontrolreposteria.ui.costos
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,7 +10,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -26,10 +26,11 @@ import java.util.*
 fun GestionarCostos(costoViewModel: ProductoCostoViewModel) {
     val viewModel: ProductoCostoViewModel = viewModel()
     val productos by viewModel.productosCosto.collectAsState()
-    val context = LocalContext.current
     var mostrarDialogo by remember { mutableStateOf(false) }
     var mostrarDialogoEditar by remember { mutableStateOf(false) }
     var productoParaEditar by remember { mutableStateOf<ProductoCosto?>(null) }
+    var productoSeleccionado by remember { mutableStateOf<ProductoCosto?>(null) }
+    var mostrarDetalles by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.cargarProductosCosto()
@@ -51,6 +52,10 @@ fun GestionarCostos(costoViewModel: ProductoCostoViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp)
+                        .clickable {
+                            productoSeleccionado = producto
+                            mostrarDetalles = true
+                        }
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Nombre: ${producto.nombre}", style = MaterialTheme.typography.titleMedium)
@@ -117,6 +122,28 @@ fun GestionarCostos(costoViewModel: ProductoCostoViewModel) {
         )
     }
 
+    if (mostrarDetalles && productoSeleccionado != null) {
+        AlertDialog(
+            onDismissRequest = { mostrarDetalles = false },
+            confirmButton = {
+                TextButton(onClick = { mostrarDetalles = false }) {
+                    Text("Cerrar")
+                }
+            },
+            title = { Text("Detalles de ${productoSeleccionado!!.nombre}") },
+            text = {
+                Column {
+                    productoSeleccionado!!.ingredientes.forEach { (_, ing) ->
+                        Text("- ${ing.nombre}: ${ing.cantidad} ${ing.unidad}")
+                        Text("   Costo unitario: $${ing.costoUnidad}")
+                        Text("   Costo total: $${ing.costoTotal}")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Costo total del producto: $${productoSeleccionado!!.costoTotal}")
+                }
+            }
+        )
+    }
 }
 
 @Composable

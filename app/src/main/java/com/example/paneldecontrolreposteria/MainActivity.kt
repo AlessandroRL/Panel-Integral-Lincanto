@@ -56,8 +56,8 @@ class MainActivity : ComponentActivity() {
                         NavigationBarItem(
                             selected = selectedIndex.intValue == 1,
                             onClick = { selectedIndex.intValue = 1 },
-                            icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Productos") },
-                            label = { Text("Productos") }
+                            icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Gestión") },
+                            label = { Text("Gestión") }
                         )
                         NavigationBarItem(
                             selected = selectedIndex.intValue == 2,
