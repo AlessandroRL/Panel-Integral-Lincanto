@@ -65,4 +65,6 @@ dependencies {
     implementation(libs.androidx.material)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.androidx.core.splashscreen)
+    implementation(libs.material)
 }

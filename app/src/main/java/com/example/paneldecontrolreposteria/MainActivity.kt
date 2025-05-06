@@ -25,6 +25,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.compose.material.icons.filled.Kitchen
 import androidx.compose.material.icons.filled.SmartToy
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.paneldecontrolreposteria.screens.AgregarPedidoScreen
 import com.example.paneldecontrolreposteria.screens.GestionIngredientesScreen
 import com.example.paneldecontrolreposteria.screens.GestionPedidoScreen
@@ -37,7 +38,13 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     @OptIn(ExperimentalEncodingApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+
         super.onCreate(savedInstanceState)
+        splashScreen.setKeepOnScreenCondition {
+            false
+        }
+
         setContent {
             val pedidoViewModel: PedidoViewModel = viewModel()
             val selectedIndex = remember { mutableIntStateOf(0) }
