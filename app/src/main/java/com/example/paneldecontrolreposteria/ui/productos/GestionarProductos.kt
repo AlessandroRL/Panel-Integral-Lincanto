@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,9 +18,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.paneldecontrolreposteria.model.IngredienteDetalle
 import com.example.paneldecontrolreposteria.model.Producto
+import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -64,7 +70,13 @@ fun GestionarProductos(viewModel: ProductoViewModel) {
                             color = MaterialTheme.colorScheme.primary
                         )
                         producto.ingredientes.forEachIndexed { index, ingrediente ->
-                            Text("${index + 1}. $ingrediente", style = MaterialTheme.typography.bodyMedium)
+                            val detalle = buildString {
+                                append("${ingrediente.nombre}: ${ingrediente.cantidad} ${ingrediente.unidad}")
+                                if (!ingrediente.observacion.isNullOrBlank()) {
+                                    append(" (${ingrediente.observacion})")
+                                }
+                            }
+                            Text("${index + 1}. $detalle", style = MaterialTheme.typography.bodyMedium)
                         }
 
                         producto.preparacion?.let {
@@ -159,14 +171,19 @@ fun GestionarProductos(viewModel: ProductoViewModel) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("MutableCollectionMutableState")
 @Composable
 fun DialogoAgregarProducto(
     onDismiss: () -> Unit,
     onAgregar: (Producto) -> Unit
 ) {
+    val ingredienteViewModel: IngredienteViewModel = viewModel()
+    val ingredientesDisponibles = ingredienteViewModel.ingredientes.collectAsState().value
+    val unidadesDisponibles = listOf("gr", "ml", "unidad")
+
     var nombre by remember { mutableStateOf("") }
-    var ingredientesTexto by remember { mutableStateOf("") }
+    val ingredientes = remember { mutableStateListOf<IngredienteDetalle>() }
     var preparacion by remember { mutableStateOf("") }
     var utensiliosTexto by remember { mutableStateOf("") }
     var tips by remember { mutableStateOf("") }
@@ -176,11 +193,6 @@ fun DialogoAgregarProducto(
         confirmButton = {
             Button(
                 onClick = {
-                    val ingredientes = ingredientesTexto
-                        .split("\n")
-                        .map { it.trim() }
-                        .filter { it.isNotEmpty() }
-
                     val utensilios = utensiliosTexto
                         .split("\n")
                         .map { it.trim() }
@@ -188,10 +200,10 @@ fun DialogoAgregarProducto(
 
                     val producto = Producto(
                         nombre = nombre.trim(),
-                        ingredientes = ingredientes,
-                        preparacion = preparacion.trim(),
-                        utensilios = utensilios,
-                        tips = tips.trim()
+                        ingredientes = ingredientes.toList(),
+                        preparacion = preparacion.trim().ifBlank { null },
+                        utensilios = if (utensilios.isNotEmpty()) utensilios else null,
+                        tips = tips.trim().ifBlank { null }
                     )
                     onAgregar(producto)
                     onDismiss()
@@ -215,13 +227,124 @@ fun DialogoAgregarProducto(
                     singleLine = true
                 )
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = ingredientesTexto,
-                    onValueChange = { ingredientesTexto = it },
-                    label = { Text("Ingredientes (uno por línea)") },
-                    modifier = Modifier.height(150.dp)
-                )
-                Spacer(Modifier.height(8.dp))
+
+                Text("Ingredientes del Producto", style = MaterialTheme.typography.titleMedium)
+
+                ingredientes.forEachIndexed { index, ingrediente ->
+
+                    var expandedNombre by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = expandedNombre,
+                        onExpandedChange = { expandedNombre = !expandedNombre },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = ingrediente.nombre,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Ingrediente") },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedNombre)
+                            },
+                            modifier = Modifier.menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expandedNombre,
+                            onDismissRequest = { expandedNombre = false }
+                        ) {
+                            ingredientesDisponibles.forEach { ingBD ->
+                                DropdownMenuItem(
+                                    text = { Text(ingBD.nombre) },
+                                    onClick = {
+                                        ingredientes[index] = ingrediente.copy(nombre = ingBD.nombre)
+                                        expandedNombre = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    var expandedUnidad by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = expandedUnidad,
+                        onExpandedChange = { expandedUnidad = !expandedUnidad },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = ingrediente.unidad,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Unidad") },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedUnidad)
+                            },
+                            modifier = Modifier.menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expandedUnidad,
+                            onDismissRequest = { expandedUnidad = false }
+                        ) {
+                            unidadesDisponibles.forEach { unidad ->
+                                DropdownMenuItem(
+                                    text = { Text(unidad) },
+                                    onClick = {
+                                        ingredientes[index] = ingrediente.copy(unidad = unidad)
+                                        expandedUnidad = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = if (ingrediente.cantidad == 0.0) "" else ingrediente.cantidad.toString(),
+                        onValueChange = {
+                            val nuevaCantidad = it.toDoubleOrNull() ?: 0.0
+                            ingredientes[index] = ingrediente.copy(cantidad = nuevaCantidad)
+                        },
+                        label = { Text("Cantidad") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = ingrediente.observacion ?: "",
+                        onValueChange = {
+                            ingredientes[index] = ingrediente.copy(observacion = it.ifBlank { null })
+                        },
+                        label = { Text("Observación (opcional)") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        IconButton(onClick = { ingredientes.removeAt(index) }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                Button(
+                    onClick = {
+                        ingredientes.add(IngredienteDetalle())
+                    },
+                    modifier = Modifier.padding(vertical = 8.dp)
+                ) {
+                    Text("Añadir nuevo ingrediente")
+                }
+
+                Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = preparacion,
                     onValueChange = { preparacion = it },

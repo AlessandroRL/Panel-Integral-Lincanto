@@ -4,6 +4,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.example.paneldecontrolreposteria.model.Producto
 import kotlinx.coroutines.tasks.await
 import android.util.Log
+import com.example.paneldecontrolreposteria.model.IngredienteDetalle
 
 class ProductoRepository {
     private val db = FirebaseFirestore.getInstance()
@@ -14,7 +15,15 @@ class ProductoRepository {
             productosRef.get().await().documents.mapNotNull { doc ->
                 val nombre = doc.getString("nombre") ?: return@mapNotNull null
 
-                val ingredientes = (doc.get("ingredientes") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+                val ingredientes = (doc.get("ingredientes") as? List<*>)?.mapNotNull { ingrediente ->
+                    val ingMap = ingrediente as? Map<*, *> ?: return@mapNotNull null
+                    IngredienteDetalle(
+                        nombre = ingMap["nombre"] as? String ?: "",
+                        unidad = ingMap["unidad"] as? String ?: "",
+                        cantidad = (ingMap["cantidad"] as? Number)?.toDouble() ?: 0.0,
+                        observacion = ingMap["observacion"] as? String
+                    )
+                } ?: emptyList()
 
                 val preparacion = doc.getString("preparacion")
 
