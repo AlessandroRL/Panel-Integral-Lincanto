@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -27,6 +26,7 @@ import com.example.paneldecontrolreposteria.model.IngredienteDetalle
 import com.example.paneldecontrolreposteria.model.Producto
 import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
+import com.example.paneldecontrolreposteria.ui.components.DropdownBusquedaIngredientes
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -228,45 +228,40 @@ fun DialogoAgregarProducto(
                 )
                 Spacer(Modifier.height(8.dp))
 
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "📏 Equivalencias comunes:",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("🥄 1 cucharada = 15 ml")
+                        Text("🧂 1 cucharadita = 5 ml")
+                        Text("🍵 1 taza = 240 ml")
+                        Text("🫶 1 pizca = aprox. 0.3 gramos")
+                    }
+                }
+
                 Text("Ingredientes del Producto", style = MaterialTheme.typography.titleMedium)
 
                 ingredientes.forEachIndexed { index, ingrediente ->
-
-                    var expandedNombre by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
-                        expanded = expandedNombre,
-                        onExpandedChange = { expandedNombre = !expandedNombre },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = ingrediente.nombre,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Ingrediente") },
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedNombre)
-                            },
-                            modifier = Modifier.menuAnchor()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = expandedNombre,
-                            onDismissRequest = { expandedNombre = false }
-                        ) {
-                            ingredientesDisponibles.forEach { ingBD ->
-                                DropdownMenuItem(
-                                    text = { Text(ingBD.nombre) },
-                                    onClick = {
-                                        ingredientes[index] = ingrediente.copy(nombre = ingBD.nombre)
-                                        expandedNombre = false
-                                    }
-                                )
-                            }
+                    DropdownBusquedaIngredientes(
+                        ingredientes = ingredientesDisponibles.map { it.nombre },
+                        ingredienteSeleccionado = ingrediente.nombre,
+                        onSeleccionarIngrediente = { nuevoNombre ->
+                            ingredientes[index] = ingrediente.copy(nombre = nuevoNombre)
                         }
-                    }
+                    )
 
                     var expandedUnidad by remember { mutableStateOf(false) }
+
                     ExposedDropdownMenuBox(
                         expanded = expandedUnidad,
                         onExpandedChange = { expandedUnidad = !expandedUnidad },

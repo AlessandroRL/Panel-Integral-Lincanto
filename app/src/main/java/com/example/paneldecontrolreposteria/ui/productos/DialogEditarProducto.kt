@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.paneldecontrolreposteria.model.IngredienteDetalle
 import com.example.paneldecontrolreposteria.model.Producto
+import com.example.paneldecontrolreposteria.ui.components.DropdownBusquedaIngredientes
 import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,115 +70,110 @@ fun DialogEditarProducto(
                 )
                 Spacer(Modifier.height(8.dp))
 
-                Text("Ingredientes:")
-                ingredientes.forEachIndexed { index, ingrediente ->
-                    Spacer(Modifier.height(8.dp))
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(4.dp)
-                    ) {
-                        var expanded by remember { mutableStateOf(false) }
-                        var selectedNombre by remember { mutableStateOf(ingrediente.nombre) }
-
-                        ExposedDropdownMenuBox(
-                            expanded = expanded,
-                            onExpandedChange = { expanded = !expanded }
-                        ) {
-                            OutlinedTextField(
-                                value = selectedNombre,
-                                onValueChange = { selectedNombre = it },
-                                label = { Text("Ingrediente") },
-                                readOnly = true,
-                                modifier = Modifier.fillMaxWidth().menuAnchor()
-                            )
-                            ExposedDropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
-                            ) {
-                                ingredientesDisponibles.forEach { ing ->
-                                    DropdownMenuItem(
-                                        text = { Text(ing.nombre) },
-                                        onClick = {
-                                            selectedNombre = ing.nombre
-                                            ingredientes[index] = ingredientes[index].copy(nombre = ing.nombre)
-                                            expanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(Modifier.height(4.dp))
-
-                        OutlinedTextField(
-                            value = ingrediente.cantidad.toString(),
-                            onValueChange = {
-                                val cantidad = it.toDoubleOrNull() ?: 0.0
-                                ingredientes[index] = ingredientes[index].copy(cantidad = cantidad)
-                            },
-                            label = { Text("Cantidad") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "📏 Equivalencias comunes:",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
                         )
-
-                        Spacer(Modifier.height(4.dp))
-
-                        var unidadExpanded by remember { mutableStateOf(false) }
-                        val unidades = listOf("gr", "ml", "unidad")
-
-                        ExposedDropdownMenuBox(
-                            expanded = unidadExpanded,
-                            onExpandedChange = { unidadExpanded = !unidadExpanded }
-                        ) {
-                            OutlinedTextField(
-                                value = ingrediente.unidad,
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text("Unidad") },
-                                modifier = Modifier.fillMaxWidth().menuAnchor()
-                            )
-                            ExposedDropdownMenu(
-                                expanded = unidadExpanded,
-                                onDismissRequest = { unidadExpanded = false }
-                            ) {
-                                unidades.forEach { unidad ->
-                                    DropdownMenuItem(
-                                        text = { Text(unidad) },
-                                        onClick = {
-                                            ingredientes[index] = ingredientes[index].copy(unidad = unidad)
-                                            unidadExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(Modifier.height(4.dp))
-
-                        OutlinedTextField(
-                            value = ingrediente.observacion ?: "",
-                            onValueChange = {
-                                ingredientes[index] = ingredientes[index].copy(observacion = it.ifBlank { null })
-                            },
-                            label = { Text("Observación") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Spacer(Modifier.height(4.dp))
-
-                        IconButton(
-                            onClick = { ingredientes.removeAt(index) },
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Icon(Icons.Default.Delete, contentDescription = "Eliminar")
-                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("🥄 1 cucharada = 15 ml")
+                        Text("🧂 1 cucharadita = 5 ml")
+                        Text("🍵 1 taza = 240 ml")
+                        Text("🫶 1 pizca = aprox. 0.3 gramos")
                     }
                 }
 
-                Spacer(Modifier.height(8.dp))
+                Text("Ingredientes:")
+                ingredientes.forEachIndexed { index, ingrediente ->
+
+                    Spacer(Modifier.height(8.dp))
+
+                    DropdownBusquedaIngredientes(
+                        ingredientes = ingredientesDisponibles.map { it.nombre },
+                        ingredienteSeleccionado = ingrediente.nombre,
+                        onSeleccionarIngrediente = { nuevoNombre ->
+                            ingredientes[index] = ingrediente.copy(nombre = nuevoNombre)
+                        }
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+
+                    OutlinedTextField(
+                        value = ingrediente.cantidad.toString(),
+                        onValueChange = {
+                            val cantidad = it.toDoubleOrNull() ?: 0.0
+                            ingredientes[index] = ingredientes[index].copy(cantidad = cantidad)
+                        },
+                        label = { Text("Cantidad") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+
+                    var unidadExpanded by remember { mutableStateOf(false) }
+                    val unidades = listOf("gr", "ml", "unidad")
+
+                    ExposedDropdownMenuBox(
+                        expanded = unidadExpanded,
+                        onExpandedChange = { unidadExpanded = !unidadExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = ingrediente.unidad,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Unidad") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = unidadExpanded,
+                            onDismissRequest = { unidadExpanded = false }
+                        ) {
+                            unidades.forEach { unidad ->
+                                DropdownMenuItem(
+                                    text = { Text(unidad) },
+                                    onClick = {
+                                        ingredientes[index] = ingredientes[index].copy(unidad = unidad)
+                                        unidadExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(4.dp))
+
+                    OutlinedTextField(
+                        value = ingrediente.observacion ?: "",
+                        onValueChange = {
+                            ingredientes[index] = ingredientes[index].copy(observacion = it.ifBlank { null })
+                        },
+                        label = { Text("Observación") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+
+                    IconButton(
+                        onClick = { ingredientes.removeAt(index) },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                    }
+
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                }
 
                 Button(
                     onClick = {

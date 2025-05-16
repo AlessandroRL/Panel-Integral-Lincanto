@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -54,7 +55,9 @@ fun GestionIngredientesScreen() {
 @Composable
 fun GestionarIngredientes() {
     val viewModel: IngredienteViewModel = viewModel()
-    val ingredientes by viewModel.ingredientes.collectAsState()
+    val ingredientesFiltrados by viewModel.ingredientesFiltrados.collectAsState()
+    val textoBusqueda by viewModel.busqueda.collectAsState()
+
     var nombre by remember { mutableStateOf("") }
     var unidad by remember { mutableStateOf("") }
     var costoUnidad by remember { mutableStateOf("") }
@@ -73,7 +76,9 @@ fun GestionarIngredientes() {
             value = nombre,
             onValueChange = { nombre = it },
             label = { Text("Nombre") },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
         )
 
         ExposedDropdownMenuBox(
@@ -86,7 +91,9 @@ fun GestionarIngredientes() {
                 label = { Text("Unidad") },
                 readOnly = true,
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unidadExpanded) },
-                modifier = Modifier.menuAnchor().fillMaxWidth()
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth()
             )
             ExposedDropdownMenu(
                 expanded = unidadExpanded,
@@ -108,7 +115,9 @@ fun GestionarIngredientes() {
             value = costoUnidad,
             onValueChange = { costoUnidad = it },
             label = { Text("Costo por unidad") },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
         )
 
         Button(
@@ -134,8 +143,22 @@ fun GestionarIngredientes() {
 
         Text("Ingredientes Registrados", style = MaterialTheme.typography.titleMedium)
 
+        // 🔍 Barra de búsqueda para filtrar ingredientes
+        OutlinedTextField(
+            value = textoBusqueda,
+            onValueChange = { viewModel.actualizarBusqueda(it) },
+            label = { Text("Buscar por nombre") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            leadingIcon = {
+                Icon(Icons.Default.Search, contentDescription = "Buscar")
+            },
+            singleLine = true
+        )
+
         LazyColumn {
-            items(ingredientes) { ingrediente ->
+            items(ingredientesFiltrados) { ingrediente ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
