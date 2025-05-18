@@ -4,10 +4,10 @@ import EditarPedidoScreen
 import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
@@ -15,7 +15,6 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -23,12 +22,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.compose.material.icons.filled.Kitchen
-import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.paneldecontrolreposteria.screens.AgregarPedidoScreen
 import com.example.paneldecontrolreposteria.screens.GestionIngredientesScreen
 import com.example.paneldecontrolreposteria.screens.GestionPedidoScreen
+import com.example.paneldecontrolreposteria.ui.asistente.AsistenteScreen
+import com.example.paneldecontrolreposteria.ui.asistente.voice.SpeechRecognizerManager
 import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import com.example.paneldecontrolreposteria.viewmodel.PedidoViewModel
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -47,42 +47,23 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val pedidoViewModel: PedidoViewModel = viewModel()
-            val selectedIndex = remember { mutableIntStateOf(0) }
             val ingredienteViewModel = remember { IngredienteViewModel() }
-            MainApp(pedidoViewModel, ingredienteViewModel)
-
-            Scaffold(
-                bottomBar = {
-                    NavigationBar {
-                        NavigationBarItem(
-                            selected = selectedIndex.intValue == 0,
-                            onClick = { selectedIndex.intValue = 0 },
-                            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Pedidos") },
-                            label = { Text("Pedidos") }
-                        )
-                        NavigationBarItem(
-                            selected = selectedIndex.intValue == 1,
-                            onClick = { selectedIndex.intValue = 1 },
-                            icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Gestión") },
-                            label = { Text("Gestión") }
-                        )
-                        NavigationBarItem(
-                            selected = selectedIndex.intValue == 2,
-                            onClick = { selectedIndex.intValue = 2 },
-                            icon = { Icon(Icons.Filled.Mic, contentDescription = "Asistente") },
-                            label = { Text("Asistente") }
-                        )
+            val recognizedText = remember { mutableStateOf("") }
+            val context = this
+            val navController = rememberNavController()
+            val speechRecognizerManager = remember {
+                SpeechRecognizerManager(
+                    context = context,
+                    onResult = { result ->
+                        recognizedText.value = result
+                        navController.navigate("asistenteVirtual")
+                    },
+                    onError = { error ->
+                        Log.e("SpeechRecognizer", "Error: $error")
                     }
-                }
-            ) { padding ->
-                Box(modifier = Modifier.padding(padding)) {
-                    when (selectedIndex.intValue) {
-                        0 -> AppNavigation(viewModel = pedidoViewModel) // Panel de gestión de pedidos
-                        1 -> GestionIngredientesScreen()  // Gestión de ingredientes, productos y costos
-                        2 -> Text("Asistente Virtual (en desarrollo)")
-                    }
-                }
+                )
             }
+            MainApp(pedidoViewModel, ingredienteViewModel, recognizedText.value, navController)
         }
     }
 }
@@ -114,10 +95,12 @@ fun AppNavigation(viewModel: PedidoViewModel) {
 @Composable
 fun MainApp(
     pedidoViewModel: PedidoViewModel,
-    ingredienteViewModel: IngredienteViewModel
-) {
-    val navController = rememberNavController()
-    val items = listOf("Pedidos", "Ingredientes", "Asistente")
+    ingredienteViewModel: IngredienteViewModel,
+    recognizedText: String,
+    navController: NavHostController
+)
+ {
+    val items = listOf("Pedidos", "Gestion", "Asistente")
     val routes = listOf("gestionPedidos", "gestionIngredientes", "asistenteVirtual")
 
     Scaffold(
@@ -131,8 +114,8 @@ fun MainApp(
                             Icon(
                                 imageVector = when (item) {
                                     "Pedidos" -> Icons.AutoMirrored.Filled.List
-                                    "Ingredientes" -> Icons.Default.Kitchen
-                                    else -> Icons.Default.SmartToy
+                                    "Gestion" -> Icons.Default.ShoppingCart
+                                    else -> Icons.Filled.Mic
                                 },
                                 contentDescription = item
                             )
@@ -155,7 +138,7 @@ fun MainApp(
                 GestionIngredientesScreen()
             }
             composable("asistenteVirtual") {
-                Text("Aquí irá el asistente virtual con IA") // Temporal
+                AsistenteScreen(textoInicial = recognizedText)
             }
         }
     }

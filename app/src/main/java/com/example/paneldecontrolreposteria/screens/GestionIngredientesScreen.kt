@@ -11,11 +11,13 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.paneldecontrolreposteria.model.Ingrediente
+import com.example.paneldecontrolreposteria.ui.asistente.AsistenteButtonFloating
 import com.example.paneldecontrolreposteria.ui.costos.GestionarCostos
 import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import com.example.paneldecontrolreposteria.ui.productos.GestionarProductos
@@ -120,30 +122,42 @@ fun GestionarIngredientes() {
                 .padding(vertical = 4.dp)
         )
 
-        Button(
-            onClick = {
-                if (nombre.isNotBlank() && unidad.isNotBlank() && costoUnidad.toDoubleOrNull() != null) {
-                    val nuevo = Ingrediente(
-                        nombre = nombre,
-                        unidad = unidad,
-                        costoUnidad = costoUnidad.toDouble()
-                    )
-                    viewModel.agregarIngrediente(nuevo)
-                    nombre = ""
-                    unidad = ""
-                    costoUnidad = ""
-                }
-            },
-            modifier = Modifier.padding(top = 8.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Guardar Ingrediente")
+            Button(
+                onClick = {
+                    if (nombre.isNotBlank() && unidad.isNotBlank() && costoUnidad.toDoubleOrNull() != null) {
+                        val nuevo = Ingrediente(
+                            nombre = nombre,
+                            unidad = unidad,
+                            costoUnidad = costoUnidad.toDouble()
+                        )
+                        viewModel.agregarIngrediente(nuevo)
+                        nombre = ""
+                        unidad = ""
+                        costoUnidad = ""
+                    }
+                }
+            ) {
+                Text("Guardar Ingrediente")
+            }
+
+            AsistenteButtonFloating(
+                currentTabIndex = 0,
+                onMicClick = { /* Acción al hacer clic en el micrófono */ },
+                modifier = Modifier
+            )
         }
 
         Divider(modifier = Modifier.padding(vertical = 16.dp))
 
         Text("Ingredientes Registrados", style = MaterialTheme.typography.titleMedium)
 
-        // 🔍 Barra de búsqueda para filtrar ingredientes
         OutlinedTextField(
             value = textoBusqueda,
             onValueChange = { viewModel.actualizarBusqueda(it) },

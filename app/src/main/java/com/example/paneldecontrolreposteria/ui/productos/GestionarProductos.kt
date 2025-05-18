@@ -26,6 +26,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.paneldecontrolreposteria.model.IngredienteDetalle
 import com.example.paneldecontrolreposteria.model.Producto
+import com.example.paneldecontrolreposteria.ui.asistente.AsistenteButtonFloating
 import com.example.paneldecontrolreposteria.ui.components.BusquedaIngredientesConLista
 import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
@@ -55,8 +56,19 @@ fun GestionarProductos(viewModel: ProductoViewModel) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar Producto")
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier.padding(end = 16.dp, bottom = 16.dp)
+            ) {
+                FloatingActionButton(onClick = { showDialog = true }) {
+                    Icon(Icons.Default.Add, contentDescription = "Agregar Producto")
+                }
+                AsistenteButtonFloating(
+                    currentTabIndex = 1,
+                    onMicClick = { /* Acción al hacer clic en el micrófono */ },
+                    modifier = Modifier
+                )
             }
         }
     ) { paddingValues ->

@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.paneldecontrolreposteria.model.ProductoCosto
+import com.example.paneldecontrolreposteria.ui.asistente.AsistenteButtonFloating
 import com.example.paneldecontrolreposteria.viewmodel.ProductoCostoViewModel
 
 @SuppressLint("DefaultLocale")
@@ -38,98 +39,111 @@ fun GestionarCostos(
     }
 
     Scaffold { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(16.dp)
         ) {
-            Text("Gestión de Costos", style = MaterialTheme.typography.headlineMedium)
-            Spacer(modifier = Modifier.height(16.dp))
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxSize()
+            ) {
+                Text("Gestión de Costos", style = MaterialTheme.typography.headlineMedium)
+                Spacer(modifier = Modifier.height(16.dp))
 
-            if (cargando) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-            } else if (productosCosto.isEmpty()) {
-                Text("No hay productos registrados.")
-            } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    items(productosCosto) { producto ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                                .clickable {
-                                    productoSeleccionado = producto
-                                },
-                            shape = RoundedCornerShape(12.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                        ) {
-                            Row(
+                if (cargando) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                } else if (productosCosto.isEmpty()) {
+                    Text("No hay productos registrados.")
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        items(productosCosto) { producto ->
+                            Card(
                                 modifier = Modifier
-                                    .padding(16.dp)
-                                    .fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .clickable {
+                                        productoSeleccionado = producto
+                                    },
+                                shape = RoundedCornerShape(12.dp),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                             ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(producto.nombre, style = MaterialTheme.typography.titleMedium)
-                                    Text("Costo total: $${String.format("%.2f", producto.costoTotal)}")
-                                }
-                                IconButton(onClick = {
-                                    productoEditando = producto
-                                    mostrarDialogoEditar = true
-                                }) {
-                                    Icon(Icons.Default.Edit, contentDescription = "Editar")
-                                }
-                                IconButton(onClick = {
-                                    viewModel.eliminarProductoCosto(producto.nombre)
-                                }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                                Row(
+                                    modifier = Modifier
+                                        .padding(16.dp)
+                                        .fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(producto.nombre, style = MaterialTheme.typography.titleMedium)
+                                        Text("Costo total: $${String.format("%.2f", producto.costoTotal)}")
+                                    }
+                                    IconButton(onClick = {
+                                        productoEditando = producto
+                                        mostrarDialogoEditar = true
+                                    }) {
+                                        Icon(Icons.Default.Edit, contentDescription = "Editar")
+                                    }
+                                    IconButton(onClick = {
+                                        viewModel.eliminarProductoCosto(producto.nombre)
+                                    }) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            productoEditando = ProductoCosto(nombre = "", ingredientes = mutableMapOf())
+                            mostrarDialogoEditar = true
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Nuevo", modifier = Modifier.padding(end = 8.dp))
+                        Text("Desde cero")
+                    }
+
+                    Button(
+                        onClick = { mostrarDialogoPlantilla = true },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                    ) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = "Plantilla", modifier = Modifier.padding(end = 8.dp))
+                        Text("Desde plantilla")
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Row(
+            AsistenteButtonFloating(
+                currentTabIndex = 1,
+                onMicClick = { /* Acción al hacer clic en el micrófono */ },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Button(
-                    onClick = {
-                        productoEditando = ProductoCosto(nombre = "", ingredientes = mutableMapOf())
-                        mostrarDialogoEditar = true
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Nuevo", modifier = Modifier.padding(end = 8.dp))
-                    Text("Desde cero")
-                }
-
-                Button(
-                    onClick = { mostrarDialogoPlantilla = true },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                ) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = "Plantilla", modifier = Modifier.padding(end = 8.dp))
-                    Text("Desde plantilla")
-                }
-            }
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = 88.dp)
+            )
         }
 
         if (mostrarDialogoPlantilla) {

@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.navigation.NavHostController
 import androidx.compose.ui.graphics.Color
 import com.example.paneldecontrolreposteria.model.Pedido
+import com.example.paneldecontrolreposteria.ui.asistente.AsistenteButtonFloating
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,8 +119,19 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { navController.navigate("agregarPedido") }) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Agregar Pedido")
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier.padding(end = 16.dp, bottom = 16.dp)
+            ) {
+                FloatingActionButton(onClick = { navController.navigate("agregarPedido") }) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "Agregar Pedido")
+                }
+                AsistenteButtonFloating(
+                    currentTabIndex = 0,
+                    onMicClick = { /* Acción al hacer clic en el micrófono */ },
+                    modifier = Modifier
+                )
             }
         }
     ) { padding ->
