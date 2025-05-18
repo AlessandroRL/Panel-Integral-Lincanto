@@ -2,6 +2,7 @@ package com.example.paneldecontrolreposteria.ui.productos
 
 import android.annotation.SuppressLint
 import android.os.Build
+import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
@@ -27,6 +28,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.paneldecontrolreposteria.model.IngredienteDetalle
 import com.example.paneldecontrolreposteria.model.Producto
 import com.example.paneldecontrolreposteria.ui.asistente.AsistenteButtonFloating
+import com.example.paneldecontrolreposteria.ui.asistente.voice.SpeechRecognizerManager
 import com.example.paneldecontrolreposteria.ui.components.BusquedaIngredientesConLista
 import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
@@ -47,6 +49,21 @@ fun GestionarProductos(viewModel: ProductoViewModel) {
 
     val scrollState = rememberLazyListState()
 
+    val context = LocalContext.current
+    val recognizedText = remember { mutableStateOf("") }
+    val speechRecognizerManager = remember {
+        SpeechRecognizerManager(
+            context = context,
+            onResult = { result ->
+                recognizedText.value = result
+                Log.d("SpeechRecognizer", "Texto reconocido: $result")
+            },
+            onError = { error ->
+                Log.e("SpeechRecognizer", "Error: $error")
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -66,7 +83,7 @@ fun GestionarProductos(viewModel: ProductoViewModel) {
                 }
                 AsistenteButtonFloating(
                     currentTabIndex = 1,
-                    onMicClick = { /* Acción al hacer clic en el micrófono */ },
+                    onMicClick = { speechRecognizerManager.startListening() },
                     modifier = Modifier
                 )
             }

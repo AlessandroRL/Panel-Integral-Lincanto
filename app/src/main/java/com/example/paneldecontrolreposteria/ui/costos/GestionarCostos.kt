@@ -1,6 +1,7 @@
 package com.example.paneldecontrolreposteria.ui.costos
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,10 +16,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.paneldecontrolreposteria.model.ProductoCosto
 import com.example.paneldecontrolreposteria.ui.asistente.AsistenteButtonFloating
+import com.example.paneldecontrolreposteria.ui.asistente.voice.SpeechRecognizerManager
 import com.example.paneldecontrolreposteria.viewmodel.ProductoCostoViewModel
 
 @SuppressLint("DefaultLocale")
@@ -36,6 +39,21 @@ fun GestionarCostos(
 
     LaunchedEffect(Unit) {
         viewModel.cargarProductosCosto()
+    }
+
+    val context = LocalContext.current
+    val recognizedText = remember { mutableStateOf("") }
+    val speechRecognizerManager = remember {
+        SpeechRecognizerManager(
+            context = context,
+            onResult = { result ->
+                recognizedText.value = result
+                Log.d("SpeechRecognizer", "Texto reconocido: $result")
+            },
+            onError = { error ->
+                Log.e("SpeechRecognizer", "Error: $error")
+            }
+        )
     }
 
     Scaffold { padding ->
@@ -139,7 +157,7 @@ fun GestionarCostos(
 
             AsistenteButtonFloating(
                 currentTabIndex = 1,
-                onMicClick = { /* Acción al hacer clic en el micrófono */ },
+                onMicClick = { speechRecognizerManager.startListening() },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 16.dp, bottom = 88.dp)

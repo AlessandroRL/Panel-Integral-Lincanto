@@ -1,6 +1,8 @@
 package com.example.paneldecontrolreposteria.screens
 
+import android.content.pm.PackageManager
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,12 +17,16 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.Alignment
 import androidx.navigation.NavHostController
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import com.example.paneldecontrolreposteria.model.Pedido
 import com.example.paneldecontrolreposteria.ui.asistente.AsistenteButtonFloating
+import com.example.paneldecontrolreposteria.ui.asistente.voice.SpeechRecognizerManager
+import android.Manifest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewModel) {
+fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewModel, speechRecognizerManager: SpeechRecognizerManager) {
     val pedidos by viewModel.pedidos.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -48,6 +54,8 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                 else -> it
             }
         }
+
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -129,7 +137,18 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                 }
                 AsistenteButtonFloating(
                     currentTabIndex = 0,
-                    onMicClick = { /* Acción al hacer clic en el micrófono */ },
+                    onMicClick = {
+                        if (ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.RECORD_AUDIO
+                            ) == PackageManager.PERMISSION_GRANTED
+                        ) {
+                            Toast.makeText(context, "🎤 Escuchando...", Toast.LENGTH_SHORT).show()
+                            speechRecognizerManager.startListening()
+                        } else {
+                            Toast.makeText(context, "Permiso de grabación no concedido", Toast.LENGTH_SHORT).show()
+                        }
+                    },
                     modifier = Modifier
                 )
             }
