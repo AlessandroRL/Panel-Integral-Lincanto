@@ -5,12 +5,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.paneldecontrolreposteria.ui.asistente.voice.SpeechRecognizerManager
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.State
 
 class AsistenteViewModel : ViewModel() {
 
     val textoReconocido = mutableStateOf("")
     val estaEscuchando = mutableStateOf(false)
     val errorReconocimiento = mutableStateOf("")
+    private val _respuestaAsistente = mutableStateOf("")
+    val respuestaAsistente: State<String> get() = _respuestaAsistente
 
     fun iniciarEscucha(contexto: android.content.Context) {
         errorReconocimiento.value = ""
@@ -45,4 +48,13 @@ class AsistenteViewModel : ViewModel() {
         errorReconocimiento.value = ""
         estaEscuchando.value = false
     }
+
+    fun establecerTextoReconocido(texto: String) {
+        textoReconocido.value = texto
+    }
+
+    fun establecerRespuesta(respuesta: String) {
+        _respuestaAsistente.value = respuesta
+    }
+
 }

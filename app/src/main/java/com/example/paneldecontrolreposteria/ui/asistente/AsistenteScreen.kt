@@ -12,18 +12,34 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.paneldecontrolreposteria.ui.asistente.core.AsistenteController
 import com.example.paneldecontrolreposteria.viewmodel.AsistenteViewModel
 
 @Composable
 fun AsistenteScreen(
     textoInicial: String = "",
-    viewModel: AsistenteViewModel = viewModel()
+    viewModel: AsistenteViewModel = viewModel(),
+    asistenteController: AsistenteController
 ) {
     val context = LocalContext.current
 
     val textoReconocido by viewModel.textoReconocido
     val estaEscuchando by viewModel.estaEscuchando
     val errorReconocimiento by viewModel.errorReconocimiento
+    var respuesta = asistenteController.procesarTexto(textoInicial)
+
+    LaunchedEffect(textoInicial) {
+        if (textoInicial.isNotBlank()) {
+            viewModel.establecerTextoReconocido(textoInicial)
+            viewModel.establecerRespuesta(respuesta)
+        }
+    }
+
+    LaunchedEffect(textoReconocido) {
+        if (textoReconocido.isNotBlank()) {
+            respuesta = asistenteController.procesarTexto(textoReconocido)
+        }
+    }
 
     Column(
         modifier = Modifier
