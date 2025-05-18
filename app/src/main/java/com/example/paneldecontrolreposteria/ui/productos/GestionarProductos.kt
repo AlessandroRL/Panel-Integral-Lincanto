@@ -4,12 +4,8 @@ import android.annotation.SuppressLint
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -18,11 +14,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -30,37 +26,71 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.paneldecontrolreposteria.model.IngredienteDetalle
 import com.example.paneldecontrolreposteria.model.Producto
+import com.example.paneldecontrolreposteria.ui.components.BusquedaIngredientesConLista
 import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
-import com.example.paneldecontrolreposteria.ui.components.DropdownBusquedaIngredientes
 
+@OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun GestionarProductos(viewModel: ProductoViewModel) {
     var showDialog by remember { mutableStateOf(false) }
+    var textoBusqueda by remember { mutableStateOf("") }
+    var mostrarDialogoEditar by remember { mutableStateOf(false) }
+    var productoParaEditar by remember { mutableStateOf<Producto?>(null) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Gestión de Productos", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(8.dp))
+    val listaProductos by viewModel.productos.collectAsState()
+    val productosFiltrados = listaProductos
+        .filter { it.nombre.contains(textoBusqueda, ignoreCase = true) }
+        .sortedBy { it.nombre.lowercase() }
 
-        Button(onClick = { showDialog = true }) {
-            Text("Agregar Producto")
+    val scrollState = rememberLazyListState()
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Gestión de Productos") },
+                navigationIcon = {},
+                actions = {}
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showDialog = true }) {
+                Icon(Icons.Default.Add, contentDescription = "Agregar Producto")
+            }
         }
+    ) { paddingValues ->
+        LazyColumn(
+            state = scrollState,
+            contentPadding = PaddingValues(
+                top = paddingValues.calculateTopPadding() + 8.dp,
+                bottom = paddingValues.calculateBottomPadding() + 16.dp,
+                start = 16.dp,
+                end = 16.dp
+            ),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            item {
+                OutlinedTextField(
+                    value = textoBusqueda,
+                    onValueChange = { textoBusqueda = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    label = { Text("Buscar producto") },
+                    singleLine = true,
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = "Buscar")
+                    }
+                )
+            }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        val listaProductos by viewModel.productos.collectAsState()
-        val productosOrdenados = listaProductos.sortedBy { it.nombre.lowercase() }
-        var mostrarDialogoEditar by remember { mutableStateOf(false) }
-        var productoParaEditar by remember { mutableStateOf<Producto?>(null) }
-        val scrollState = rememberLazyListState()
-
-        LazyColumn(state = scrollState) {
-            items(productosOrdenados) { producto ->
-                Card(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)) {
-
+            items(productosFiltrados) { producto ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             "🍰 ${producto.nombre}",
@@ -70,11 +100,7 @@ fun GestionarProductos(viewModel: ProductoViewModel) {
 
                         Spacer(modifier = Modifier.height(4.dp))
 
-                        Text(
-                            "Ingredientes:",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Text("Ingredientes:", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.primary)
                         producto.ingredientes.forEachIndexed { index, ingrediente ->
                             val detalle = buildString {
                                 append("${ingrediente.nombre}: ${ingrediente.cantidad} ${ingrediente.unidad}")
@@ -87,36 +113,21 @@ fun GestionarProductos(viewModel: ProductoViewModel) {
 
                         producto.preparacion?.let {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                "Preparación:",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Text("Preparación:", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                it,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                            Text(it, style = MaterialTheme.typography.bodyMedium)
                         }
 
                         producto.utensilios?.let {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                "Utensilios:",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Text("Utensilios:", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(it.joinToString("\n"), style = MaterialTheme.typography.bodyMedium)
                         }
 
                         producto.tips?.let {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                "Tips:",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Text("Tips:", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(it, style = MaterialTheme.typography.bodyMedium)
                         }
@@ -259,11 +270,18 @@ fun DialogoAgregarProducto(
                     Text("Ingredientes del Producto", style = MaterialTheme.typography.titleMedium)
 
                     ingredientes.forEachIndexed { index, ingrediente ->
-                        DropdownBusquedaIngredientes(
+                        BusquedaIngredientesConLista(
                             ingredientes = ingredientesDisponibles.map { it.nombre },
                             ingredienteSeleccionado = ingrediente.nombre,
                             onSeleccionarIngrediente = { nuevoNombre ->
-                                ingredientes[index] = ingrediente.copy(nombre = nuevoNombre)
+                                val unidadPorDefecto = ingredientesDisponibles
+                                    .find { it.nombre == nuevoNombre }
+                                    ?.unidad ?: ""
+
+                                ingredientes[index] = ingrediente.copy(
+                                    nombre = nuevoNombre,
+                                    unidad = unidadPorDefecto
+                                )
                             }
                         )
 

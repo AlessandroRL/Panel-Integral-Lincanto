@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.paneldecontrolreposteria.model.IngredienteDetalle
 import com.example.paneldecontrolreposteria.model.Producto
-import com.example.paneldecontrolreposteria.ui.components.DropdownBusquedaIngredientes
+import com.example.paneldecontrolreposteria.ui.components.BusquedaIngredientesConLista
 import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,11 +95,18 @@ fun DialogEditarProducto(
 
                     Text("Ingredientes:")
                     ingredientes.forEachIndexed { index, ingrediente ->
-                        DropdownBusquedaIngredientes(
+                        BusquedaIngredientesConLista(
                             ingredientes = ingredientesDisponibles.map { it.nombre },
                             ingredienteSeleccionado = ingrediente.nombre,
                             onSeleccionarIngrediente = { nuevoNombre ->
-                                ingredientes[index] = ingrediente.copy(nombre = nuevoNombre)
+                                val unidadPorDefecto = ingredientesDisponibles
+                                    .find { it.nombre == nuevoNombre }
+                                    ?.unidad ?: ""
+
+                                ingredientes[index] = ingrediente.copy(
+                                    nombre = nuevoNombre,
+                                    unidad = unidadPorDefecto
+                                )
                             }
                         )
 
@@ -212,7 +219,6 @@ fun DialogEditarProducto(
                     Spacer(Modifier.height(32.dp))
                 }
 
-                // Botón flotante dentro del Box
                 FloatingActionButton(
                     onClick = { mostrarEquivalencias = true },
                     modifier = Modifier

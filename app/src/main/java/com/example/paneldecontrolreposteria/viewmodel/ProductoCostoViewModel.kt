@@ -1,138 +1,83 @@
 package com.example.paneldecontrolreposteria.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.firestore.FirebaseFirestore
 import com.example.paneldecontrolreposteria.model.Ingrediente
+import com.example.paneldecontrolreposteria.model.Producto
 import com.example.paneldecontrolreposteria.model.ProductoCosto
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 class ProductoCostoViewModel : ViewModel() {
+    private val repository = ProductoCostoRepository(FirebaseFirestore.getInstance())
 
-    private val db = FirebaseFirestore.getInstance()
+    private val _productosBase = MutableStateFlow<List<Producto>>(emptyList())
+    val productosBase: StateFlow<List<Producto>> = _productosBase
 
-    private val _ingredientes = MutableStateFlow<List<Ingrediente>>(emptyList())
-    val ingredientes: StateFlow<List<Ingrediente>> = _ingredientes
+    private val _ingredientesBase = MutableStateFlow<List<Ingrediente>>(emptyList())
+    val ingredientesBase: StateFlow<List<Ingrediente>> = _ingredientesBase
 
     private val _productosCosto = MutableStateFlow<List<ProductoCosto>>(emptyList())
     val productosCosto: StateFlow<List<ProductoCosto>> = _productosCosto
 
-    init {
-        obtenerIngredientes()
-        obtenerProductosCosto()
+    private val _cargando = MutableStateFlow(false)
+    val cargando: StateFlow<Boolean> = _cargando
+
+    private val _ingredientesDisponibles = MutableStateFlow<List<String>>(emptyList())
+    val ingredientesDisponibles: StateFlow<List<String>> = _ingredientesDisponibles
+
+    suspend fun obtenerIngredientesBase(): List<Ingrediente> {
+        return repository.obtenerIngredientesBase()
     }
 
-    fun obtenerIngredientes() {
-        db.collection("ingredientes")
-            .addSnapshotListener { snapshot, e ->
-                if (e != null) {
-                    Log.w("CostosViewModel", "Error al obtener ingredientes", e)
-                    return@addSnapshotListener
-                }
-
-                if (snapshot != null) {
-                    val listaIngredientes = snapshot.documents.mapNotNull { doc ->
-                        doc.toObject(Ingrediente::class.java)
-                    }
-                    _ingredientes.value = listaIngredientes
-                }
-            }
-    }
-
-    fun obtenerProductosCosto() {
-        db.collection("productosCosto")
-            .addSnapshotListener { snapshot, e ->
-                if (e != null) {
-                    Log.w("CostosViewModel", "Error al obtener productosCosto", e)
-                    return@addSnapshotListener
-                }
-
-                if (snapshot != null) {
-                    val listaProductos = snapshot.documents.mapNotNull { doc ->
-                        doc.toObject(ProductoCosto::class.java)
-                    }
-                    _productosCosto.value = listaProductos
-                }
-            }
-    }
-
-    fun agregarProductoCosto(productoCosto: ProductoCosto, onResult: (Boolean) -> Unit = {}) {
+    fun cargarProductosBase() {
         viewModelScope.launch {
-            try {
-                db.collection("productosCosto")
-                    .add(productoCosto)
-                    .await()
-                onResult(true)
-            } catch (e: Exception) {
-                Log.e("CostosViewModel", "Error al agregar productoCosto: ${e.message}")
-                onResult(false)
-            }
+            _cargando.value = true
+            _productosBase.value = repository.obtenerProductosBase()
+            _cargando.value = false
         }
     }
 
     fun cargarProductosCosto() {
         viewModelScope.launch {
-            try {
-                val snapshot = db.collection("productosCosto").get().await()
-                val productos = snapshot.documents.mapNotNull { doc ->
-                    doc.toObject(ProductoCosto::class.java)
-                }
-                _productosCosto.value = productos
-            } catch (e: Exception) {
-                Log.e("ProductoCostoViewModel", "Error al cargar productos de costo: ${e.message}")
-            }
+            _cargando.value = true
+            _productosCosto.value = repository.obtenerProductosCosto()
+            _cargando.value = false
         }
     }
 
-    fun eliminarProductoCosto(nombreProducto: String, onResult: (Boolean) -> Unit = {}) {
-        viewModelScope.launch {
-            try {
-                val snapshot = db.collection("productosCosto")
-                    .whereEqualTo("nombre", nombreProducto)
-                    .get()
-                    .await()
+    suspend fun crearProductoCostoDesdePlantilla(producto: Producto): ProductoCosto {
+        return repository.crearProductoCostoDesdePlantilla(producto)
+    }
 
-                if (!snapshot.isEmpty) {
-                    val docId = snapshot.documents.first().id
-                    db.collection("productosCosto").document(docId).delete().await()
-                    cargarProductosCosto()
-                    onResult(true)
-                } else {
-                    onResult(false)
-                }
-            } catch (e: Exception) {
-                Log.e("ProductoCostoViewModel", "Error al eliminar: ${e.message}")
-                onResult(false)
-            }
+    fun guardarProductoCosto(productoCosto: ProductoCosto) {
+        viewModelScope.launch {
+            repository.guardarProductoCosto(productoCosto)
+            cargarProductosCosto()
         }
     }
 
-    fun editarProductoCosto(nombreOriginal: String, productoEditado: ProductoCosto, onResult: (Boolean) -> Unit = {}) {
+    fun eliminarProductoCosto(nombre: String) {
         viewModelScope.launch {
-            try {
-                val snapshot = db.collection("productosCosto")
-                    .whereEqualTo("nombre", nombreOriginal)
-                    .get()
-                    .await()
+            repository.eliminarProductoCosto(nombre)
+            cargarProductosCosto()
+        }
+    }
 
-                if (!snapshot.isEmpty) {
-                    val docId = snapshot.documents.first().id
-                    db.collection("productosCosto").document(docId)
-                        .set(productoEditado)
-                        .await()
-                    cargarProductosCosto() // Refresca datos
-                    onResult(true)
-                } else {
-                    onResult(false)
-                }
-            } catch (e: Exception) {
-                Log.e("ProductoCostoViewModel", "Error al editar: ${e.message}")
-                onResult(false)
-            }
+    fun actualizarProductoCosto(productoCosto: ProductoCosto) {
+        viewModelScope.launch {
+            repository.actualizarProductoCosto(productoCosto)
+            cargarProductosCosto()
+        }
+    }
+
+    fun cargarIngredientesBase() {
+        viewModelScope.launch {
+            val ingredientes = repository.obtenerIngredientesBase()
+            _ingredientesBase.value = ingredientes
+            _ingredientesDisponibles.value = ingredientes.map { it.nombre }
         }
     }
 }
