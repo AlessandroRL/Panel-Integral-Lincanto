@@ -1,7 +1,10 @@
 package com.example.paneldecontrolreposteria.ui.costos
 
+import android.Manifest
 import android.annotation.SuppressLint
-import android.util.Log
+import android.content.Context
+import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,8 +19,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.paneldecontrolreposteria.model.ProductoCosto
 import com.example.paneldecontrolreposteria.ui.asistente.AsistenteButtonFloating
@@ -27,7 +30,9 @@ import com.example.paneldecontrolreposteria.viewmodel.ProductoCostoViewModel
 @SuppressLint("DefaultLocale")
 @Composable
 fun GestionarCostos(
-    viewModel: ProductoCostoViewModel = viewModel()
+    viewModel: ProductoCostoViewModel = viewModel(),
+    speechRecognizerManager: SpeechRecognizerManager,
+    context: Context
 ) {
     var mostrarDialogoPlantilla by remember { mutableStateOf(false) }
     var mostrarDialogoEditar by remember { mutableStateOf(false) }
@@ -39,21 +44,6 @@ fun GestionarCostos(
 
     LaunchedEffect(Unit) {
         viewModel.cargarProductosCosto()
-    }
-
-    val context = LocalContext.current
-    val recognizedText = remember { mutableStateOf("") }
-    val speechRecognizerManager = remember {
-        SpeechRecognizerManager(
-            context = context,
-            onResult = { result ->
-                recognizedText.value = result
-                Log.d("SpeechRecognizer", "Texto reconocido: $result")
-            },
-            onError = { error ->
-                Log.e("SpeechRecognizer", "Error: $error")
-            }
-        )
     }
 
     Scaffold { padding ->
@@ -154,15 +144,26 @@ fun GestionarCostos(
                     }
                 }
             }
-
             AsistenteButtonFloating(
-                currentTabIndex = 1,
-                onMicClick = { speechRecognizerManager.startListening() },
+                currentTabIndex = 0,
+                onMicClick = {
+                    if (ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.RECORD_AUDIO
+                        ) == PackageManager.PERMISSION_GRANTED
+                    ) {
+                        Toast.makeText(context, "🎤 Escuchando...", Toast.LENGTH_SHORT).show()
+                        speechRecognizerManager.startListening()
+                    } else {
+                        Toast.makeText(context, "Permiso de grabación no concedido", Toast.LENGTH_SHORT).show()
+                    }
+                },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 88.dp)
+                    .padding(end = 16.dp, bottom = 80.dp) // Ajustar posición
             )
         }
+    }
 
         if (mostrarDialogoPlantilla) {
             DialogSeleccionarPlantillaProducto(
@@ -205,4 +206,3 @@ fun GestionarCostos(
             )
         }
     }
-}

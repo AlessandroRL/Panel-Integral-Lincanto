@@ -1,7 +1,10 @@
 ﻿package com.example.paneldecontrolreposteria.screens
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.paneldecontrolreposteria.model.Ingrediente
 import com.example.paneldecontrolreposteria.ui.asistente.AsistenteButtonFloating
@@ -30,12 +34,13 @@ import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun GestionIngredientesScreen() {
+fun GestionIngredientesScreen(speechRecognizerManager: SpeechRecognizerManager) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Ingredientes", "Productos", "Costos")
 
     val productoViewModel: ProductoViewModel = viewModel()
     val costoViewModel: ProductoCostoViewModel = viewModel()
+    val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = selectedTabIndex) {
@@ -49,16 +54,19 @@ fun GestionIngredientesScreen() {
         }
 
         when (selectedTabIndex) {
-            0 -> GestionarIngredientes()
-            1 -> GestionarProductos(productoViewModel)
-            2 -> GestionarCostos(costoViewModel)
+            0 -> GestionarIngredientes(speechRecognizerManager, context)
+            1 -> GestionarProductos(productoViewModel, speechRecognizerManager, context)
+            2 -> GestionarCostos(costoViewModel, speechRecognizerManager, context)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GestionarIngredientes() {
+fun GestionarIngredientes(
+    speechRecognizerManager: SpeechRecognizerManager,
+    context: Context
+) {
     val viewModel: IngredienteViewModel = viewModel()
     val ingredientesFiltrados by viewModel.ingredientesFiltrados.collectAsState()
     val textoBusqueda by viewModel.busqueda.collectAsState()
@@ -73,21 +81,6 @@ fun GestionarIngredientes() {
 
     var ingredienteAEditar by remember { mutableStateOf<Ingrediente?>(null) }
     var mostrarDialogoEdicion by remember { mutableStateOf(false) }
-
-    val context = LocalContext.current
-    val recognizedText = remember { mutableStateOf("") }
-    val speechRecognizerManager = remember {
-        SpeechRecognizerManager(
-            context = context,
-            onResult = { result ->
-                recognizedText.value = result
-                Log.d("SpeechRecognizer", "Texto reconocido: $result")
-            },
-            onError = { error ->
-                Log.e("SpeechRecognizer", "Error: $error")
-            }
-        )
-    }
 
     Column(modifier = Modifier.padding(16.dp)) {
         Text("Registrar Ingrediente", style = MaterialTheme.typography.titleLarge)
@@ -164,10 +157,20 @@ fun GestionarIngredientes() {
             ) {
                 Text("Guardar Ingrediente")
             }
-
             AsistenteButtonFloating(
                 currentTabIndex = 0,
-                onMicClick = { speechRecognizerManager.startListening() },
+                onMicClick = {
+                    if (ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.RECORD_AUDIO
+                        ) == PackageManager.PERMISSION_GRANTED
+                    ) {
+                        Toast.makeText(context, "🎤 Escuchando...", Toast.LENGTH_SHORT).show()
+                        speechRecognizerManager.startListening()
+                    } else {
+                        Toast.makeText(context, "Permiso de grabación no concedido", Toast.LENGTH_SHORT).show()
+                    }
+                },
                 modifier = Modifier
             )
         }

@@ -1,8 +1,10 @@
 package com.example.paneldecontrolreposteria.ui.productos
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
@@ -24,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.paneldecontrolreposteria.model.IngredienteDetalle
 import com.example.paneldecontrolreposteria.model.Producto
@@ -36,7 +39,11 @@ import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun GestionarProductos(viewModel: ProductoViewModel) {
+fun GestionarProductos(
+    viewModel: ProductoViewModel,
+    speechRecognizerManager: SpeechRecognizerManager,
+    context: Context
+) {
     var showDialog by remember { mutableStateOf(false) }
     var textoBusqueda by remember { mutableStateOf("") }
     var mostrarDialogoEditar by remember { mutableStateOf(false) }
@@ -48,21 +55,6 @@ fun GestionarProductos(viewModel: ProductoViewModel) {
         .sortedBy { it.nombre.lowercase() }
 
     val scrollState = rememberLazyListState()
-
-    val context = LocalContext.current
-    val recognizedText = remember { mutableStateOf("") }
-    val speechRecognizerManager = remember {
-        SpeechRecognizerManager(
-            context = context,
-            onResult = { result ->
-                recognizedText.value = result
-                Log.d("SpeechRecognizer", "Texto reconocido: $result")
-            },
-            onError = { error ->
-                Log.e("SpeechRecognizer", "Error: $error")
-            }
-        )
-    }
 
     Scaffold(
         topBar = {
@@ -82,8 +74,19 @@ fun GestionarProductos(viewModel: ProductoViewModel) {
                     Icon(Icons.Default.Add, contentDescription = "Agregar Producto")
                 }
                 AsistenteButtonFloating(
-                    currentTabIndex = 1,
-                    onMicClick = { speechRecognizerManager.startListening() },
+                    currentTabIndex = 0,
+                    onMicClick = {
+                        if (ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.RECORD_AUDIO
+                            ) == PackageManager.PERMISSION_GRANTED
+                        ) {
+                            Toast.makeText(context, "🎤 Escuchando...", Toast.LENGTH_SHORT).show()
+                            speechRecognizerManager.startListening()
+                        } else {
+                            Toast.makeText(context, "Permiso de grabación no concedido", Toast.LENGTH_SHORT).show()
+                        }
+                    },
                     modifier = Modifier
                 )
             }

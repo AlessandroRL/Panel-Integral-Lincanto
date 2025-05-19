@@ -67,4 +67,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.material)
+    implementation(libs.generativeai)
+    implementation(libs.compose.runtime.livedata)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
 }
