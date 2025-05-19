@@ -1,126 +1,105 @@
 package com.example.paneldecontrolreposteria.ui.asistente
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.paneldecontrolreposteria.ui.asistente.core.AsistenteController
-import com.example.paneldecontrolreposteria.viewmodel.AsistenteViewModel
+import androidx.compose.ui.unit.sp
+import com.example.paneldecontrolreposteria.ui.asistente.voice.SpeechRecognizerManager
+import com.example.paneldecontrolreposteria.viewmodel.GeminiViewModel
 
 @Composable
 fun AsistenteScreen(
-    textoInicial: String = "",
-    viewModel: AsistenteViewModel = viewModel(),
-    asistenteController: AsistenteController
+    geminiViewModel: GeminiViewModel,
+    controller: AsistenteController,
+    speechRecognizerManager: SpeechRecognizerManager
 ) {
-    val context = LocalContext.current
+    val contexto = LocalContext.current
+    var instruccion by remember { mutableStateOf("") }
+    val respuesta by geminiViewModel.respuesta.observeAsState("")
+    val coroutineScope = rememberCoroutineScope()
 
-    val textoReconocido by viewModel.textoReconocido
-    val estaEscuchando by viewModel.estaEscuchando
-    val errorReconocimiento by viewModel.errorReconocimiento
-    var respuesta = asistenteController.procesarTexto(textoInicial)
-
-    LaunchedEffect(textoInicial) {
-        if (textoInicial.isNotBlank()) {
-            viewModel.establecerTextoReconocido(textoInicial)
-            viewModel.establecerRespuesta(respuesta)
-        }
-    }
-
-    LaunchedEffect(textoReconocido) {
-        if (textoReconocido.isNotBlank()) {
-            respuesta = asistenteController.procesarTexto(textoReconocido)
+    LaunchedEffect(respuesta) {
+        if (respuesta.isNotBlank()) {
+            controller.interpretarYActuar(respuesta) { resultado ->
+                Toast.makeText(contexto, resultado, Toast.LENGTH_LONG).show()
+            }
         }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+            .padding(16.dp)
     ) {
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-            Text(
-                text = "Asistente Inteligente",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+        Text("Asistente Virtual", fontSize = 22.sp, fontWeight = FontWeight.Bold)
 
-            if (estaEscuchando) {
-                Text(
-                    text = "🎙️ Escuchando...",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
+        Spacer(modifier = Modifier.height(16.dp))
 
-            if (textoReconocido.isNotBlank()) {
-                Text(
-                    text = "📝 Comando recibido:\n\n\"$textoReconocido\"",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(vertical = 12.dp)
-                )
-                Divider()
-                Text(
-                    text = "🧠 Respuesta simulada:",
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.padding(top = 12.dp)
-                )
-                Text(
-                    text = procesarSimulacion(textoReconocido),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.DarkGray,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
+        OutlinedTextField(
+            value = instruccion,
+            onValueChange = { instruccion = it },
+            label = { Text("Escribe tu instrucción") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-            if (errorReconocimiento.isNotBlank()) {
-                Text(
-                    text = "❌ Error: $errorReconocimiento",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(8.dp))
 
         Row(
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Button(
-                onClick = { viewModel.iniciarEscucha(context) },
-                enabled = !estaEscuchando
+                onClick = {
+                    if (instruccion.isNotBlank()) {
+                        controller.procesarInstruccion(instruccion)
+                        instruccion = ""
+                    }
+                },
+                modifier = Modifier.weight(1f)
             ) {
-                Text("🎤 Escuchar")
+                Icon(Icons.Default.Send, contentDescription = "Enviar")
+                Spacer(Modifier.width(4.dp))
+                Text("Enviar")
             }
 
-            OutlinedButton(onClick = { viewModel.resetear() }) {
-                Text("🔄 Limpiar")
+            Spacer(modifier = Modifier.width(12.dp))
+
+            IconButton(
+                onClick = {
+                    speechRecognizerManager.startListening()
+                },
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(MaterialTheme.colorScheme.primary, shape = CircleShape)
+            ) {
+                Icon(Icons.Default.Mic, contentDescription = "Hablar", tint = Color.White)
             }
         }
-    }
-}
 
-private fun procesarSimulacion(texto: String): String {
-    return when {
-        texto.contains("agrega", ignoreCase = true) && texto.contains("pedido") ->
-            "Entendido. Puedes usar el botón de agregar en la sección de Pedidos."
-        texto.contains("elimina", ignoreCase = true) && texto.contains("ingrediente") ->
-            "Recuerda que puedes eliminar un ingrediente desde la lista de ingredientes."
-        texto.contains("cuánto cuesta", ignoreCase = true) ->
-            "Puedes ver el costo estimado en la sección de Costos."
-        else -> "Estoy procesando tu orden. Próximamente podré ejecutar acciones automáticas."
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text("Respuesta del Asistente:", fontWeight = FontWeight.Medium)
+        Text(
+            text = if (respuesta.isNotBlank()) respuesta else "Aquí aparecerá la respuesta del asistente...",
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+                .background(Color(0xFFF0F0F0), shape = RoundedCornerShape(8.dp))
+                .padding(12.dp),
+            fontSize = 16.sp
+        )
     }
 }

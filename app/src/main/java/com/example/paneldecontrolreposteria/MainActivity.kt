@@ -32,11 +32,16 @@ import com.example.paneldecontrolreposteria.screens.AgregarPedidoScreen
 import com.example.paneldecontrolreposteria.screens.GestionIngredientesScreen
 import com.example.paneldecontrolreposteria.screens.GestionPedidoScreen
 import com.example.paneldecontrolreposteria.ui.asistente.AsistenteScreen
-import com.example.paneldecontrolreposteria.ui.asistente.core.AsistenteController
 import com.example.paneldecontrolreposteria.ui.asistente.voice.SpeechRecognizerManager
 import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import com.example.paneldecontrolreposteria.viewmodel.PedidoViewModel
 import kotlin.io.encoding.ExperimentalEncodingApi
+import androidx.compose.ui.platform.LocalContext
+import com.example.paneldecontrolreposteria.ui.asistente.AsistenteController
+import com.example.paneldecontrolreposteria.ui.ai.GeminiCommandInterpreter
+import com.example.paneldecontrolreposteria.viewmodel.GeminiViewModel
+import com.example.paneldecontrolreposteria.viewmodel.ProductoCostoViewModel
+import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -85,7 +90,7 @@ class MainActivity : ComponentActivity() {
                     }
                 )
             }
-            MainApp(pedidoViewModel, ingredienteViewModel, recognizedText.value, navController, speechRecognizerManager)
+            MainApp(pedidoViewModel, ingredienteViewModel, navController, speechRecognizerManager)
         }
     }
 
@@ -104,20 +109,25 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+
 @SuppressLint("StateFlowValueCalledInComposition")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainApp(
     pedidoViewModel: PedidoViewModel,
     ingredienteViewModel: IngredienteViewModel,
-    recognizedText: String,
     navController: NavHostController,
     speechRecognizerManager: SpeechRecognizerManager
 )
  {
     val items = listOf("Pedidos", "Gestion", "Asistente")
     val routes = listOf("gestionPedidos", "gestionIngredientes", "asistenteVirtual")
-     val asistenteController = remember { AsistenteController(navController) }
+     val geminiViewModel: GeminiViewModel = viewModel()
+     val pedidoViewModel: PedidoViewModel = viewModel()
+     val ingredienteViewModel: IngredienteViewModel = viewModel()
+     val productoViewModel: ProductoViewModel = viewModel()
+     val productoCostoViewModel: ProductoCostoViewModel = viewModel()
+
 
 
      Scaffold(
@@ -173,12 +183,33 @@ fun MainApp(
                 }
             }
             composable("gestionIngredientes") {
-                GestionIngredientesScreen()
+                GestionIngredientesScreen(speechRecognizerManager = speechRecognizerManager)
             }
             composable("asistenteVirtual") {
+                val context = LocalContext.current
+                val speechRecognizerManager = remember {
+                    SpeechRecognizerManager(
+                        context = context,
+                        onResult = { result ->
+                        },
+                        onError = { error ->
+                            Log.e("SpeechRecognizer", "Error: $error")
+                        }
+                    )
+                }
+
                 AsistenteScreen(
-                    textoInicial = recognizedText,
-                    asistenteController = asistenteController
+                    geminiViewModel = geminiViewModel,
+                    controller = AsistenteController(
+                        interpreter = GeminiCommandInterpreter(
+                            pedidoViewModel = pedidoViewModel,
+                            ingredienteViewModel = ingredienteViewModel,
+                            productoViewModel = productoViewModel,
+                            productoCostoViewModel = productoCostoViewModel
+                        ),
+                        geminiViewModel = geminiViewModel
+                    ),
+                    speechRecognizerManager = speechRecognizerManager
                 )
             }
         }

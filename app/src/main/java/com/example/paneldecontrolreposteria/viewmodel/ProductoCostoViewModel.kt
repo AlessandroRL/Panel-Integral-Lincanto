@@ -28,10 +28,6 @@ class ProductoCostoViewModel : ViewModel() {
     private val _ingredientesDisponibles = MutableStateFlow<List<String>>(emptyList())
     val ingredientesDisponibles: StateFlow<List<String>> = _ingredientesDisponibles
 
-    suspend fun obtenerIngredientesBase(): List<Ingrediente> {
-        return repository.obtenerIngredientesBase()
-    }
-
     fun cargarProductosBase() {
         viewModelScope.launch {
             _cargando.value = true
