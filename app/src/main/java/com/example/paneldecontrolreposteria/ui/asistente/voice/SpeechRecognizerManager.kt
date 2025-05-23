@@ -10,8 +10,8 @@ import android.util.Log
 
 class SpeechRecognizerManager(
     private val context: Context,
-    private val onResult: (String) -> Unit,
-    private val onError: (String) -> Unit
+    internal var onResult: (String) -> Unit,
+    internal var onError: (String) -> Unit
 ) {
     private var speechRecognizer: SpeechRecognizer? = null
     private var isListening = false

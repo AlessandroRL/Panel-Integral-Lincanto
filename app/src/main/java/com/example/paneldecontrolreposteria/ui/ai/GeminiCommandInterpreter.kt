@@ -158,7 +158,7 @@ class GeminiCommandInterpreter(
                 "El costo total de ${producto.nombre} es ${"%.2f".format(producto.costoTotal)}"
             }
 
-            Comando.ComandoNoReconocido -> "Lo siento, no entendí el comando."
+            Comando.ComandoNoReconocido -> ""
         }
     }
 

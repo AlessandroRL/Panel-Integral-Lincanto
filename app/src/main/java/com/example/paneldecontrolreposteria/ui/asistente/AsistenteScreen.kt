@@ -29,7 +29,8 @@ fun AsistenteScreen(
     val contexto = LocalContext.current
     var instruccion by remember { mutableStateOf("") }
     val respuesta by geminiViewModel.respuesta.observeAsState("")
-    val coroutineScope = rememberCoroutineScope()
+    var isListening by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(respuesta) {
         if (respuesta.isNotBlank()) {
@@ -68,7 +69,8 @@ fun AsistenteScreen(
                         instruccion = ""
                     }
                 },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                enabled = instruccion.isNotBlank()
             ) {
                 Icon(Icons.Default.Send, contentDescription = "Enviar")
                 Spacer(Modifier.width(4.dp))
@@ -79,11 +81,16 @@ fun AsistenteScreen(
 
             IconButton(
                 onClick = {
+                    isListening = true
+                    errorMessage = null
                     speechRecognizerManager.startListening()
                 },
                 modifier = Modifier
                     .size(56.dp)
-                    .background(MaterialTheme.colorScheme.primary, shape = CircleShape)
+                    .background(
+                        if (isListening) Color.Green else MaterialTheme.colorScheme.primary,
+                        shape = CircleShape
+                    )
             ) {
                 Icon(Icons.Default.Mic, contentDescription = "Hablar", tint = Color.White)
             }
@@ -101,5 +108,34 @@ fun AsistenteScreen(
                 .padding(12.dp),
             fontSize = 16.sp
         )
+
+        errorMessage?.let {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Error: $it",
+                color = Color.Red,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+
+    DisposableEffect(Unit) {
+        speechRecognizerManager.apply {
+            onResult = { result ->
+                isListening = false
+                instruccion = result
+                if (instruccion.isNotBlank()) {
+                    controller.procesarInstruccion(instruccion)
+                    instruccion = ""
+                }
+            }
+            onError = { error ->
+                isListening = false
+                errorMessage = error
+            }
+        }
+        onDispose {
+            speechRecognizerManager.destroy()
+        }
     }
 }
