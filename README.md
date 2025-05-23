@@ -45,3 +45,6 @@ Proyecto de gestion integral de negocio para Reposteria L'incanto
 🔸 Base de Datos: Recetas estructuradas en pasos con ingredientes.
 🔸 Interfaz: Panel para seleccionar recetas y activar el asistente.
 🔸 IA: Implementación de Google Gemini para interpretar y ejecutar órdenes automáticamente en la app, integración con Google Gemini para gestionar ingredientes mediante comandos, uso de Google Gemini para interpretar órdenes y ejecutar acciones en Firebase.
+
+
+Link de descarga apk Google Drive (no se puede subir al repositorio ya que pesa mas de 25 mb): https://drive.google.com/drive/folders/1Ssgl_u0mHCTXPfWASt9WtO518EiGbO-y?usp=sharing
