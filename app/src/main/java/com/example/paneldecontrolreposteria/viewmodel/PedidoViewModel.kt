@@ -4,10 +4,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.paneldecontrolreposteria.model.Pedido
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import com.google.firebase.firestore.FirebaseFirestore
 
 class PedidoViewModel : ViewModel() {
     private val repository = PedidoRepository()
@@ -15,6 +15,9 @@ class PedidoViewModel : ViewModel() {
 
     private val _pedidos = MutableStateFlow<List<Pedido>>(emptyList())
     val pedidos: StateFlow<List<Pedido>> = _pedidos
+
+    private val _productos = MutableStateFlow<List<String>>(emptyList())
+    val productos: StateFlow<List<String>> = _productos
 
     init {
         obtenerPedidos()
@@ -36,14 +39,32 @@ class PedidoViewModel : ViewModel() {
             }
     }
 
-
     fun agregarPedido(pedido: Pedido) {
         viewModelScope.launch {
             try {
                 repository.agregarPedido(pedido)
                 obtenerPedidos()
             } catch (e: Exception) {
-                println("Error al agregar pedido: ${e.message}")
+                Log.e("PedidoViewModel", "Error al agregar pedido: ${e.message}")
+            }
+        }
+    }
+
+    fun editarPedido(pedido: Pedido, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val result = repository.editarPedido(pedido)
+            if (result) obtenerPedidos()
+            onResult(result)
+        }
+    }
+
+    fun eliminarPedido(pedidoId: String) {
+        viewModelScope.launch {
+            try {
+                repository.eliminarPedido(pedidoId)
+                obtenerPedidos()
+            } catch (e: Exception) {
+                Log.e("PedidoViewModel", "Error al eliminar pedido: ${e.message}")
             }
         }
     }
@@ -73,27 +94,6 @@ class PedidoViewModel : ViewModel() {
         }
     }
 
-    fun eliminarPedido(pedidoId: String) {
-        viewModelScope.launch {
-            try {
-                FirebaseFirestore.getInstance()
-                    .collection("pedidos")
-                    .document(pedidoId)
-                    .delete()
-                    .addOnSuccessListener {
-                        Log.d("Firebase", "Pedido eliminado correctamente")
-                        obtenerPedidos()
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e("Firebase", "Error al eliminar pedido", e)
-                    }
-            } catch (e: Exception) {
-                Log.e("Firebase", "Error en la eliminación", e)
-            }
-        }
-    }
-
-
     fun obtenerNombresProductos(onResultado: (List<String>) -> Unit) {
         viewModelScope.launch {
             try {
@@ -106,13 +106,4 @@ class PedidoViewModel : ViewModel() {
             }
         }
     }
-
-    fun editarPedido(pedido: Pedido, onResult: (Boolean) -> Unit) {
-        viewModelScope.launch {
-            val result = repository.editarPedido(pedido)
-            if (result) obtenerPedidos()
-            onResult(result)
-        }
-    }
-
 }

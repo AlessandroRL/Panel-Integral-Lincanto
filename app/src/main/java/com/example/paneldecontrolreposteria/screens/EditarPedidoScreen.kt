@@ -1,15 +1,24 @@
+package com.example.paneldecontrolreposteria.screens
+
+import android.annotation.SuppressLint
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.*
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.paneldecontrolreposteria.model.Pedido
+import com.example.paneldecontrolreposteria.model.ProductoPedido
 import com.example.paneldecontrolreposteria.viewmodel.PedidoViewModel
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
+@SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditarPedidoScreen(
@@ -22,27 +31,31 @@ fun EditarPedidoScreen(
     var errorMensaje by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
-    val productos = remember {
-        mutableStateListOf<Map<String, String>>().apply {
-            addAll(
-                pedido.productos.map {
-                    mapOf(
-                        "nombre" to it,
-                        "cantidad" to pedido.cantidad.toString(),
-                        "tamano" to pedido.tamano.toString()
-                    )
-                }
-            )
+    val productos = remember { mutableStateListOf<ProductoPedido>().apply { addAll(pedido.productos) } }
+    var productosDisponibles by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        viewModel.obtenerNombresProductos { productos ->
+            productosDisponibles = productos
         }
     }
+
+    val context = LocalContext.current
+    val calendar = Calendar.getInstance()
+    val year = calendar.get(Calendar.YEAR)
+    val month = calendar.get(Calendar.MONTH)
+    val day = calendar.get(Calendar.DAY_OF_MONTH)
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Editar Pedido") }) }
     ) { padding ->
-        Column(modifier = Modifier
-            .padding(padding)
-            .padding(16.dp)) {
-
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+                .fillMaxWidth()
+        ) {
             OutlinedTextField(
                 value = cliente,
                 onValueChange = { cliente = it },
@@ -50,60 +63,95 @@ fun EditarPedidoScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            OutlinedTextField(
-                value = fechaLimite,
-                onValueChange = { fechaLimite = it },
-                label = { Text("Fecha Límite") },
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+                    .clickable {
+                        val datePickerDialog = android.app.DatePickerDialog(
+                            context,
+                            { _, selectedYear, selectedMonth, selectedDay ->
+                                fechaLimite = String.format("%04d-%02d-%02d", selectedYear, selectedMonth + 1, selectedDay)
+                            },
+                            year,
+                            month,
+                            day
+                        )
+                        datePickerDialog.show()
+                    }
+            ) {
+                OutlinedTextField(
+                    value = fechaLimite,
+                    onValueChange = {},
+                    label = { Text("Fecha Límite") },
+                    readOnly = true,
+                    enabled = false,
+                    isError = errorMensaje != null && fechaLimite.isBlank(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
             Text("Productos", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp))
 
             productos.forEachIndexed { index, producto ->
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                var expanded by remember { mutableStateOf(false) }
+
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
                     OutlinedTextField(
-                        value = producto["nombre"] ?: "",
-                        onValueChange = {
-                            productos[index] = producto.toMutableMap().apply { put("nombre", it) }
-                        },
+                        readOnly = true,
+                        value = producto.nombre,
+                        onValueChange = {},
                         label = { Text("Producto ${index + 1}") },
-                        modifier = Modifier.weight(1f).padding(end = 4.dp)
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
                     )
 
-                    IconButton(
-                        onClick = {
-                            if (productos.size > 1) {
-                                productos.removeAt(index)
-                            }
-                        },
-                        modifier = Modifier.align(Alignment.CenterVertically)
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Eliminar producto", tint = MaterialTheme.colorScheme.error)
+                        productosDisponibles.forEach { nombre ->
+                            DropdownMenuItem(
+                                text = { Text(nombre) },
+                                onClick = {
+                                    productos[index] = producto.copy(nombre = nombre)
+                                    expanded = false
+                                }
+                            )
+                        }
                     }
                 }
 
                 OutlinedTextField(
-                    value = producto["cantidad"] ?: "",
-                    onValueChange = {
-                        productos[index] = producto.toMutableMap().apply { put("cantidad", it) }
-                    },
+                    value = producto.cantidad.toString(),
+                    onValueChange = { productos[index] = producto.copy(cantidad = it.toIntOrNull() ?: producto.cantidad) },
                     label = { Text("Cantidad") },
                     modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
                 )
 
                 OutlinedTextField(
-                    value = producto["tamano"] ?: "",
-                    onValueChange = {
-                        productos[index] = producto.toMutableMap().apply { put("tamano", it) }
-                    },
+                    value = producto.tamano.toString(),
+                    onValueChange = { productos[index] = producto.copy(tamano = it.toIntOrNull() ?: producto.tamano) },
                     label = { Text("Tamaño (personas)") },
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                 )
+
+                IconButton(
+                    onClick = { productos.removeAt(index) },
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar Producto", tint = MaterialTheme.colorScheme.error)
+                }
             }
 
             Button(
                 onClick = {
-                    productos.add(mapOf("nombre" to "", "cantidad" to "", "tamano" to ""))
+                    productos.add(ProductoPedido(nombre = "", cantidad = 1, tamano = 1))
                 },
                 modifier = Modifier.padding(vertical = 8.dp)
             ) {
@@ -116,34 +164,31 @@ fun EditarPedidoScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(onClick = {
-                if (cliente.isBlank() || productos.any { it["nombre"].isNullOrBlank() || it["cantidad"].isNullOrBlank() || it["tamano"].isNullOrBlank() }) {
-                    errorMensaje = "Por favor, complete todos los campos correctamente."
-                    return@Button
-                }
+            Button(
+                onClick = {
+                    if (cliente.isBlank() || productos.any { it.nombre.isBlank() || it.cantidad <= 0 || it.tamano <= 0 }) {
+                        errorMensaje = "Por favor, complete todos los campos correctamente."
+                        return@Button
+                    }
 
-                val productosEditados = productos.map { it["nombre"] ?: "" }
-                val primeraCantidad = productos.firstOrNull()?.get("cantidad")?.toIntOrNull() ?: 1
-                val primerTamano = productos.firstOrNull()?.get("tamano")?.toIntOrNull() ?: 1
+                    val pedidoActualizado = pedido.copy(
+                        cliente = cliente,
+                        productos = productos,
+                        fechaLimite = fechaLimite
+                    )
 
-                val pedidoActualizado = pedido.copy(
-                    cliente = cliente,
-                    productos = productosEditados,
-                    cantidad = primeraCantidad,
-                    tamano = primerTamano,
-                    fechaLimite = fechaLimite
-                )
-
-                scope.launch {
-                    viewModel.editarPedido(pedidoActualizado) { success ->
-                        if (success) {
-                            onPedidoEditado()
-                        } else {
-                            errorMensaje = "Error al editar el pedido."
+                    scope.launch {
+                        viewModel.editarPedido(pedidoActualizado) { success ->
+                            if (success) {
+                                onPedidoEditado()
+                            } else {
+                                errorMensaje = "Error al editar el pedido."
+                            }
                         }
                     }
-                }
-            }) {
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text("Guardar Cambios")
             }
         }

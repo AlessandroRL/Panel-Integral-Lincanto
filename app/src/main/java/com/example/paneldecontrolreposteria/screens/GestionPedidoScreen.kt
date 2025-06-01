@@ -1,7 +1,6 @@
 package com.example.paneldecontrolreposteria.screens
 
 import android.content.pm.PackageManager
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -162,9 +161,10 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Cliente: ${pedido.cliente}", style = MaterialTheme.typography.titleMedium)
-                        Text("Productos: ${pedido.productos.joinToString(", ")}")
-                        Text("Cantidad: ${pedido.cantidad}")
-                        Text("Tamaño: ${pedido.tamano} personas")
+                        Text("Productos:")
+                        pedido.productos.forEach { producto ->
+                            Text("- ${producto.nombre} (${producto.cantidad} u, ${producto.tamano} personas)")
+                        }
                         Text("Estado: ${pedido.estado}")
                         Text("Fecha de Registro: ${pedido.fechaRegistro}")
                         Text("Fecha Límite: ${pedido.fechaLimite}")
@@ -177,11 +177,13 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                         ) {
                             Button(
                                 onClick = {
-                                    Log.d("Boton", "Se presionó el botón para cambiar estado")
                                     botonDeshabilitado = true
                                     scope.launch {
-                                        val success = viewModel.actualizarEstadoPedido(pedido.id, "Listo para entrega")
-                                        if (!success) botonDeshabilitado = false
+                                        val success = viewModel.editarPedido(
+                                            pedido.copy(estado = "Listo para entrega")
+                                        ) { result ->
+                                            if (!result) botonDeshabilitado = false
+                                        }
                                     }
                                 },
                                 enabled = !botonDeshabilitado

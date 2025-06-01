@@ -38,4 +38,29 @@ class GeminiManager {
             return@withContext "Error al conectarse con Gemini: ${e.localizedMessage}"
         }
     }
+
+    fun construirPromptParaPedido(instruccion: String): String {
+        return """
+        Analiza esta instrucción de usuario y responde SOLO en formato JSON. 
+        Las posibles acciones son: agregar, editar o eliminar un pedido.
+
+        Cada producto debe incluir:
+        - nombre (string)
+        - tamano (int) = número de personas
+        - cantidad (int) = número de unidades
+
+        Ejemplo de respuesta:
+        {
+          "accion": "agregar",
+          "cliente": "Ana",
+          "productos": [
+            { "nombre": "torta", "tamano": 10, "cantidad": 1 },
+            { "nombre": "cupcake", "tamano": 1, "cantidad": 2 }
+          ]
+        }
+
+        Ahora responde según esta instrucción:
+        "$instruccion"
+    """.trimIndent()
+    }
 }

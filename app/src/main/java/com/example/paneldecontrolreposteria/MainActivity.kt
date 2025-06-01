@@ -1,6 +1,6 @@
 package com.example.paneldecontrolreposteria
 
-import EditarPedidoScreen
+import com.example.paneldecontrolreposteria.screens.EditarPedidoScreen
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager

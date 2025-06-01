@@ -10,17 +10,26 @@ class AsistenteController(
     private val interpreter: GeminiCommandInterpreter,
     private val geminiViewModel: GeminiViewModel
 ) {
+    private val coroutineScope = CoroutineScope(Dispatchers.Main)
+
     fun procesarInstruccion(texto: String) {
         geminiViewModel.procesarInstruccion(texto)
     }
 
-    private val coroutineScope = CoroutineScope(Dispatchers.Main)
-
+    /**
+     * Interpreta la respuesta generada por Gemini y ejecuta el comando correspondiente.
+     * @param respuestaGemini Respuesta en lenguaje natural generada por Gemini.
+     * @param onRespuestaFinal Callback con el resultado textual de la acción realizada.
+     */
     fun interpretarYActuar(respuestaGemini: String, onRespuestaFinal: (String) -> Unit) {
-        val comando = interpreter.interpretar(respuestaGemini)
         coroutineScope.launch {
-            val resultado = interpreter.ejecutar(comando)
-            onRespuestaFinal(resultado)
+            try {
+                val comando = interpreter.interpretar(respuestaGemini)
+                val resultado = interpreter.ejecutar(comando)
+                onRespuestaFinal(resultado)
+            } catch (e: Exception) {
+                onRespuestaFinal("Ocurrió un error al procesar la instrucción: ${e.message}")
+            }
         }
     }
 }

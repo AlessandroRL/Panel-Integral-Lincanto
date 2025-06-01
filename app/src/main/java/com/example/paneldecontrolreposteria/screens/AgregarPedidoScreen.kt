@@ -16,6 +16,7 @@ import androidx.compose.material3.DropdownMenuItem
 import android.app.DatePickerDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.platform.LocalContext
+import com.example.paneldecontrolreposteria.model.ProductoPedido
 import java.util.*
 
 @SuppressLint("MutableCollectionMutableState", "DefaultLocale")
@@ -189,13 +190,14 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
                     scope.launch {
                         try {
                             val nuevoPedido = Pedido(
-                                id = "",
                                 cliente = cliente,
                                 productos = productosSeleccionados.map {
-                                    "${it.nombre} - ${it.cantidad} u - ${it.tamano} personas"
+                                    ProductoPedido(
+                                        nombre = it.nombre,
+                                        cantidad = it.cantidad.toInt(),
+                                        tamano = it.tamano.toInt()
+                                    )
                                 },
-                                cantidad = productosSeleccionados.sumOf { it.cantidad.toIntOrNull() ?: 0 },
-                                estado = "Pendiente",
                                 fechaLimite = fechaLimite
                             )
                             viewModel.agregarPedido(nuevoPedido)
