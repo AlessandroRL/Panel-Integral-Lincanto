@@ -69,31 +69,6 @@ class PedidoViewModel : ViewModel() {
         }
     }
 
-    fun actualizarEstadoPedido(id: String, nuevoEstado: String): Boolean {
-        if (id.isBlank()) {
-            Log.e("PedidoViewModel", "Error: ID del pedido vacío")
-            return false
-        }
-
-        return try {
-            viewModelScope.launch {
-                firestore.collection("pedidos").document(id)
-                    .update("estado", nuevoEstado)
-                    .addOnSuccessListener {
-                        Log.d("PedidoViewModel", "Estado actualizado correctamente")
-                        obtenerPedidos()
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e("PedidoViewModel", "Error al actualizar el estado del pedido", e)
-                    }
-            }
-            true
-        } catch (e: Exception) {
-            Log.e("PedidoViewModel", "Excepción al actualizar el estado", e)
-            false
-        }
-    }
-
     fun obtenerNombresProductos(onResultado: (List<String>) -> Unit) {
         viewModelScope.launch {
             try {

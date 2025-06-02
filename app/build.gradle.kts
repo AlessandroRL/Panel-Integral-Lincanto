@@ -14,6 +14,7 @@ android {
     defaultConfig {
         applicationId = "com.example.paneldecontrolreposteria"
         minSdk = 21
+        //noinspection OldTargetApi
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -71,4 +72,6 @@ dependencies {
     implementation(libs.compose.runtime.livedata)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
+    implementation(libs.androidx.lifecycle.livedata.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
 }

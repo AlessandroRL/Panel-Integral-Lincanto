@@ -32,14 +32,6 @@ fun AsistenteScreen(
     var isListening by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(respuesta) {
-        if (respuesta.isNotBlank()) {
-            controller.interpretarYActuar(respuesta) { resultado ->
-                Toast.makeText(contexto, resultado, Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -65,7 +57,12 @@ fun AsistenteScreen(
             Button(
                 onClick = {
                     if (instruccion.isNotBlank()) {
-                        controller.procesarInstruccion(instruccion)
+                        geminiViewModel.procesarYEjecutar(
+                            texto = instruccion,
+                            asistenteController = controller
+                        ) { resultadoFinal ->
+                            Toast.makeText(contexto, resultadoFinal, Toast.LENGTH_LONG).show()
+                        }
                         instruccion = ""
                     }
                 },
@@ -125,7 +122,12 @@ fun AsistenteScreen(
                 isListening = false
                 instruccion = result
                 if (instruccion.isNotBlank()) {
-                    controller.procesarInstruccion(instruccion)
+                    geminiViewModel.procesarYEjecutar(
+                        texto = instruccion,
+                        asistenteController = controller
+                    ) { resultadoFinal ->
+                        Toast.makeText(contexto, resultadoFinal, Toast.LENGTH_LONG).show()
+                    }
                     instruccion = ""
                 }
             }

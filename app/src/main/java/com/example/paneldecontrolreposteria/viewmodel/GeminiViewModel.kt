@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.paneldecontrolreposteria.ui.ai.GeminiManager
+import com.example.paneldecontrolreposteria.ui.asistente.AsistenteController
 import kotlinx.coroutines.launch
 
 class GeminiViewModel : ViewModel() {
@@ -14,12 +15,16 @@ class GeminiViewModel : ViewModel() {
     private val _respuesta = MutableLiveData<String>()
     val respuesta: LiveData<String> = _respuesta
 
-    fun procesarInstruccion(texto: String) {
+    fun procesarYEjecutar(
+        texto: String,
+        asistenteController: AsistenteController,
+        onRespuestaFinal: (String) -> Unit
+    ) {
         _respuesta.value = "Procesando..."
         viewModelScope.launch {
-            val resultado = geminiManager.obtenerRespuesta(texto)
+            val resultado = geminiManager.obtenerRespuesta(texto) // << ya construye el prompt internamente
             _respuesta.value = resultado
+            asistenteController.interpretarYActuar(resultado, onRespuestaFinal)
         }
     }
 }
-

@@ -207,7 +207,6 @@ fun MainApp(
                             productoViewModel = productoViewModel,
                             productoCostoViewModel = productoCostoViewModel
                         ),
-                        geminiViewModel = geminiViewModel
                     ),
                     speechRecognizerManager = speechRecognizerManager
                 )

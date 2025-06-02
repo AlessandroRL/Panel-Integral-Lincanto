@@ -9,12 +9,14 @@ import retrofit2.http.POST
 
 class GeminiManager {
 
-    suspend fun obtenerRespuesta(instruccion: String): String = withContext(Dispatchers.IO) {
+    suspend fun obtenerRespuesta(instruccionUsuario: String): String = withContext(Dispatchers.IO) {
         try {
+            val prompt = construirPromptParaPedido(instruccionUsuario)
+
             val request = GeminiRequest(
                 contents = listOf(
                     GeminiContent(
-                        parts = listOf(GeminiPart(text = instruccion))
+                        parts = listOf(GeminiPart(text = prompt))
                     )
                 )
             )
@@ -41,25 +43,33 @@ class GeminiManager {
 
     fun construirPromptParaPedido(instruccion: String): String {
         return """
-        Analiza esta instrucción de usuario y responde SOLO en formato JSON. 
-        Las posibles acciones son: agregar, editar o eliminar un pedido.
+        Eres un asistente que interpreta instrucciones sobre pedidos de repostería. 
+        Devuelve exclusivamente un objeto JSON válido con los siguientes campos, según la intención detectada:
 
-        Cada producto debe incluir:
-        - nombre (string)
-        - tamano (int) = número de personas
-        - cantidad (int) = número de unidades
+        - "intencion": uno de ["agregar", "editar", "eliminar"]
+        - "cliente": nombre del cliente (string)
+        - "productos": lista de objetos con:
+            - "nombre": nombre del producto (string)
+            - "tamano": número de personas o tamaño del producto (int)
+            - "cantidad": cantidad de unidades (int)
+        - "fechaLimite": solo si la intención es "agregar" o "editar", debe estar en formato "yyyy-MM-dd". Este campo es obligatorio en esos casos.
 
-        Ejemplo de respuesta:
+        Si la intención es "eliminar", omite el campo "productos" y "fechaLimite".
+
+        Devuelve solo el JSON. No escribas ningún texto adicional, explicación ni etiquetas como "Respuesta:" o "Output:".
+
+        Ejemplo válido:
         {
-          "accion": "agregar",
-          "cliente": "Ana",
+          "intencion": "agregar",
+          "cliente": "María",
+          "fechaLimite": "2025-06-10",
           "productos": [
-            { "nombre": "torta", "tamano": 10, "cantidad": 1 },
-            { "nombre": "cupcake", "tamano": 1, "cantidad": 2 }
+            { "nombre": "pastel", "tamano": 10, "cantidad": 1 },
+            { "nombre": "cupcake", "tamano": 1, "cantidad": 3 }
           ]
         }
 
-        Ahora responde según esta instrucción:
+        Instrucción del usuario:
         "$instruccion"
     """.trimIndent()
     }
