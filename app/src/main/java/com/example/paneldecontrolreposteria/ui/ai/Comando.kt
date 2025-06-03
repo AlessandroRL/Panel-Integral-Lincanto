@@ -4,12 +4,20 @@ import com.example.paneldecontrolreposteria.model.ProductoPedido
 
 sealed class Comando {
     data class AgregarPedido(val cliente: String, val productos: List<ProductoPedido>, val fechaLimite: String) : Comando()
-    data class EditarPedido(val cliente: String, val productos: List<ProductoPedido>, val fechaLimite: String) : Comando()
+    data class EditarPedido(
+        val cliente: String,
+        val productos: List<ProductoPedido>?,
+        val fechaLimite: String?
+    ) : Comando()
     data class EliminarPedido(val cliente: String) : Comando()
 
-    //data class AgregarIngrediente(val nombre: String, val unidad: String, val costoUnidad: Double) : Comando()
-    //data class EditarIngrediente(val nombre: String, val unidad: String, val costoUnidad: Double) : Comando()
-    //data class EliminarIngrediente(val nombre: String) : Comando()
+    data class AgregarIngrediente(val nombre: String, val unidad: String, val costoUnidad: Double): Comando()
+    data class EditarIngrediente(
+        val nombre: String,
+        val unidad: String?,
+        val costoUnidad: Double?
+    ) : Comando()
+    data class EliminarIngrediente(val nombre: String): Comando()
 
     //data class AgregarProducto(val nombre: String) : Comando()
     //data class EliminarProducto(val nombre: String) : Comando()

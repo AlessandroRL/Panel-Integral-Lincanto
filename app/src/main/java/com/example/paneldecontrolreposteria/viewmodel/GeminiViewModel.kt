@@ -22,7 +22,7 @@ class GeminiViewModel : ViewModel() {
     ) {
         _respuesta.value = "Procesando..."
         viewModelScope.launch {
-            val resultado = geminiManager.obtenerRespuesta(texto) // << ya construye el prompt internamente
+            val resultado = geminiManager.obtenerRespuesta(texto)
             _respuesta.value = resultado
             asistenteController.interpretarYActuar(resultado, onRespuestaFinal)
         }

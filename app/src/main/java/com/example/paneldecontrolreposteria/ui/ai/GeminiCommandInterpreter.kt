@@ -31,33 +31,13 @@ class GeminiCommandInterpreter(
             Log.d("GeminiInterpreter", "JSON limpio:\n$limpio")
 
             val json = JSONObject(limpio)
-            val intencion = json.getString("intencion").lowercase()
+            val tipo = json.optString("tipo", "pedido").lowercase()
 
-            val cliente = json.getString("cliente")
-
-            when (intencion) {
-                "agregar", "editar" -> {
-                    val fechaLimite = json.optString("fechaLimite", "").trim()
-
-                    if (!fechaLimite.matches(Regex("""\d{4}-\d{2}-\d{2}"""))) {
-                        Log.w("GeminiInterpreter", "Formato de fecha inválido o ausente: $fechaLimite")
-                        return Comando.ComandoNoReconocido
-                    }
-
-                    val productos = leerProductos(json)
-                    return if (intencion == "agregar") {
-                        Comando.AgregarPedido(cliente, productos, fechaLimite)
-                    } else {
-                        Comando.EditarPedido(cliente, productos, fechaLimite)
-                    }
-                }
-
-                "eliminar" -> {
-                    return Comando.EliminarPedido(cliente)
-                }
-
+            return when (tipo) {
+                "ingrediente" -> interpretarIngrediente(json)
+                "pedido" -> interpretarPedido(json)
                 else -> {
-                    Log.w("GeminiInterpreter", "Intención no reconocida: $intencion")
+                    Log.w("GeminiInterpreter", "Tipo no reconocido: $tipo")
                     Comando.ComandoNoReconocido
                 }
             }
@@ -66,6 +46,80 @@ class GeminiCommandInterpreter(
             Log.e("GeminiInterpreter", "Error interpretando JSON: ${e.message}", e)
             Log.d("GeminiInterpreter", "Respuesta original:\n$respuestaGemini")
             Comando.ComandoNoReconocido
+        }
+    }
+
+    private fun interpretarPedido(json: JSONObject): Comando {
+        val intencion = json.getString("intencion").lowercase()
+        val cliente = json.getString("cliente")
+
+        return when (intencion) {
+            "agregar" -> {
+                val fechaLimite = json.optString("fechaLimite", "").trim()
+                if (!fechaLimite.matches(Regex("""\d{4}-\d{2}-\d{2}"""))) {
+                    Log.w("GeminiInterpreter", "Formato de fecha inválido o ausente: $fechaLimite")
+                    return Comando.ComandoNoReconocido
+                }
+
+                val productos = leerProductos(json)
+                Comando.AgregarPedido(cliente, productos, fechaLimite)
+            }
+
+            "editar" -> {
+                val fechaLimite = if (json.has("fechaLimite")) {
+                    val fecha = json.getString("fechaLimite").trim()
+                    if (!fecha.matches(Regex("""\d{4}-\d{2}-\d{2}"""))) {
+                        Log.w("GeminiInterpreter", "Formato de fecha inválido: $fecha")
+                        return Comando.ComandoNoReconocido
+                    }
+                    fecha
+                } else null
+
+                val productos = if (json.has("productos")) leerProductos(json) else null
+
+                Comando.EditarPedido(cliente, productos, fechaLimite)
+            }
+
+            "eliminar" -> Comando.EliminarPedido(cliente)
+
+            else -> {
+                Log.w("GeminiInterpreter", "Intención no reconocida en pedidos: $intencion")
+                Comando.ComandoNoReconocido
+            }
+        }
+    }
+
+    private fun interpretarIngrediente(json: JSONObject): Comando {
+        val intencion = json.getString("intencion").lowercase()
+        val nombre = json.getString("nombre")
+
+        return when (intencion) {
+            "agregar" -> {
+                val unidad = json.optString("unidad", "").trim()
+                val costoUnidad = json.optDouble("costoUnidad", -1.0)
+                if (unidad.isEmpty() || costoUnidad < 0) {
+                    Log.w("GeminiInterpreter", "Unidad o costo por unidad inválidos al agregar")
+                    Comando.ComandoNoReconocido
+                } else {
+                    Comando.AgregarIngrediente(nombre, unidad, costoUnidad)
+                }
+            }
+
+            "editar" -> {
+                val unidad: String? =
+                    if (json.has("unidad") && !json.isNull("unidad")) json.getString("unidad") else null
+
+                val costoUnidad: Double? =
+                    if (json.has("costoUnidad") && !json.isNull("costoUnidad")) json.getDouble("costoUnidad") else null
+
+                Log.d("GeminiInterpreter", "Editar ingrediente: nombre=$nombre, unidad=$unidad, costoUnidad=$costoUnidad")
+
+                Comando.EditarIngrediente(nombre, unidad, costoUnidad)
+            }
+
+            "eliminar" -> Comando.EliminarIngrediente(nombre)
+
+            else -> Comando.ComandoNoReconocido
         }
     }
 
@@ -110,10 +164,29 @@ class GeminiCommandInterpreter(
                 if (pedidoExistente == null) {
                     "No se encontró el pedido del cliente ${comando.cliente}."
                 } else {
+                    val productosActuales = pedidoExistente.productos.toMutableList()
+
+                    comando.productos?.forEach { nuevoProducto ->
+                        val index = productosActuales.indexOfFirst {
+                            it.nombre.equals(nuevoProducto.nombre, ignoreCase = true)
+                        }
+
+                        if (nuevoProducto.cantidad == 0) {
+                            if (index != -1) productosActuales.removeAt(index)
+                        } else {
+                            if (index != -1) {
+                                productosActuales[index] = nuevoProducto // Actualizar
+                            } else {
+                                productosActuales.add(nuevoProducto) // Agregar
+                            }
+                        }
+                    }
+
                     val actualizado = pedidoExistente.copy(
-                        productos = comando.productos,
-                        fechaLimite = comando.fechaLimite
+                        productos = productosActuales,
+                        fechaLimite = comando.fechaLimite ?: pedidoExistente.fechaLimite
                     )
+
                     pedidoViewModel.editarPedido(actualizado) {}
                     "Pedido de ${comando.cliente} actualizado correctamente."
                 }
@@ -128,6 +201,41 @@ class GeminiCommandInterpreter(
                 } else {
                     pedidoViewModel.eliminarPedido(pedidoExistente.id)
                     "Pedido de ${comando.cliente} eliminado correctamente."
+                }
+            }
+
+            is Comando.AgregarIngrediente -> {
+                ingredienteViewModel.agregarIngrediente(
+                    Ingrediente(nombre = comando.nombre, unidad = comando.unidad, costoUnidad = comando.costoUnidad)
+                )
+                "Ingrediente ${comando.nombre} agregado correctamente."
+            }
+
+            is Comando.EditarIngrediente -> {
+                val existente = ingredienteViewModel.ingredientes.value
+                    ?.find { it.nombre.equals(comando.nombre, ignoreCase = true) }
+
+                if (existente == null) {
+                    "No se encontró el ingrediente ${comando.nombre}."
+                } else {
+                    val actualizado = existente.copy(
+                        unidad = comando.unidad ?: existente.unidad,
+                        costoUnidad = comando.costoUnidad ?: existente.costoUnidad
+                    )
+                    ingredienteViewModel.editarIngrediente(actualizado)
+                    "Ingrediente ${comando.nombre} actualizado correctamente."
+                }
+            }
+
+            is Comando.EliminarIngrediente -> {
+                val existente = ingredienteViewModel.ingredientes.value
+                    ?.find { it.nombre.equals(comando.nombre, ignoreCase = true) }
+
+                if (existente == null) {
+                    "No se encontró el ingrediente ${comando.nombre}."
+                } else {
+                    ingredienteViewModel.eliminarIngrediente(existente.id)
+                    "Ingrediente ${comando.nombre} eliminado correctamente."
                 }
             }
 
