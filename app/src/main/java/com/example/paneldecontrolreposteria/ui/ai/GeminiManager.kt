@@ -38,11 +38,30 @@ class GeminiManager {
     }
 
     private fun construirPrompt(instruccion: String): String {
-        return if (Regex("ingrediente[s]?", RegexOption.IGNORE_CASE).containsMatchIn(instruccion)) {
-            construirPromptParaIngrediente(instruccion)
-        } else {
-            construirPromptParaPedido(instruccion)
+        return when {
+            Regex("ingrediente[s]?", RegexOption.IGNORE_CASE).containsMatchIn(instruccion) -> {
+                construirPromptParaIngrediente(instruccion)
+            }
+
+            Regex("producto[s]?", RegexOption.IGNORE_CASE).containsMatchIn(instruccion) -> {
+                construirPromptParaProducto(instruccion)
+            }
+
+            else -> {
+                construirPromptParaPedido(instruccion)
+            }
         }
+        return """
+
+        IMPORTANTE:
+        - Si en la misma instruccion se mencionan las palabras "pedido" y "producto", asume que se trata de un pedido y no de un producto general.
+        - "Agregar un producto a un pedido" NO es lo mismo que "Agregar un nuevo producto a la base de productos".
+        - "Agregar un ingrediente a un producto" NO es lo mismo que "Agregar un nuevo ingrediente a la base de ingredientes".
+        - Si la instrucción habla de un pedido, se espera una acción sobre un pedido.
+        - Si la instrucción habla de un producto, asume que es sobre su contenido, no sobre la base general.
+        - En general interpreta correctamente la instrucción según el contexto de pedidos, productos o ingredientes.
+        Instrucción: "$instruccion"
+        """.trimIndent()
     }
 
     private fun construirPromptParaPedido(instruccion: String): String {
@@ -100,6 +119,7 @@ class GeminiManager {
         - Si la intención es "eliminar", omite el campo "productos" y "fechaLimite".
         - Si se desea eliminar un producto, inclúyelo en la lista de productos con cantidad igual a 0.
         - No reemplaces todos los productos del pedido a menos que se indique explícitamente.
+        - Si en la misma instruccion se mencionan las palabras "pedido" y "producto", asume que se trata de un pedido y no de un producto general.
 
         Ejemplo de respuesta para eliminar un producto:
         {
@@ -139,5 +159,53 @@ class GeminiManager {
         Instrucción:
         "$instruccion"
         """.trimIndent()
+    }
+
+    private fun construirPromptParaProducto(instruccion: String): String {
+        return """
+        Eres un asistente experto en gestión de productos de repostería. 
+        Analiza el siguiente texto del usuario y devuelve un JSON limpio que identifique la intención y los campos claves del producto.
+        
+        En caso de agregar o editar un producto, haz que la primera letra de la primera palabra esté en mayúscula (lo mismo al agregar o editar un ingrediente).
+        Ademas no tengas e cuenta tildes para ningún campo.
+        
+        El JSON debe tener:
+        - tipo: "producto"
+        - intencion: "agregar", "editar" o "eliminar"
+        - nombre: nombre del producto
+        - ingredientes: lista de objetos con nombre, unidad (la unidad solo puede ser gr, ml o unidad), cantidad y observación (si aplica)
+        - preparacion: texto opcional
+        - utensilios: lista opcional
+        - tips: texto opcional
+
+        Notas especiales:
+        - Si el usuario quiere eliminar un ingrediente específico, incluye ese ingrediente en la lista con cantidad 0.
+        - Si quiere eliminar varios ingredientes, incluye todos con cantidad 0.
+        - Si quiere eliminar todos los ingredientes, ingredientes debe ser una lista vacía [].
+        - No incluyas campos como null si no se mencionan explícitamente. Omítelos.
+        - No reemplaces campos existentes a menos que el usuario lo indique. 
+        - Si en la misma instruccion se mencionan las palabras "pedido" y "producto", asume que se trata de un pedido y no de un producto general.
+
+        Formato esperado para agregar:
+        {
+          "tipo": "producto",
+          "intencion": "agregar",
+          "nombre": "Tarta de manzana",
+          "preparacion": "Mezclar los ingredientes y hornear a 180°C por 40 minutos",
+          "tips": "Servir con helado"
+        }
+
+        Formato esperado para eliminar:
+        {
+          "tipo": "producto",
+          "intencion": "eliminar",
+          "nombre": "Tarta clásica"
+        }
+
+        Solo responde el JSON, sin explicaciones.
+        
+        Instrucción del usuario:
+        "$instruccion"
+    """.trimIndent()
     }
 }

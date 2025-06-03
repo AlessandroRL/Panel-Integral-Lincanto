@@ -1,6 +1,8 @@
 package com.example.paneldecontrolreposteria.ui.asistente
 
+import android.os.Build
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -20,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.example.paneldecontrolreposteria.ui.asistente.voice.SpeechRecognizerManager
 import com.example.paneldecontrolreposteria.viewmodel.GeminiViewModel
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AsistenteScreen(
     geminiViewModel: GeminiViewModel,

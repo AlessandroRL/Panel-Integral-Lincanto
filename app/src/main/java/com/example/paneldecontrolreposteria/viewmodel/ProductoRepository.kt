@@ -60,13 +60,4 @@ class ProductoRepository {
     suspend fun eliminarProducto(id: String) {
         productosRef.document(id).delete().await()
     }
-
-    suspend fun actualizarProducto(producto: Producto) {
-        try {
-            productosRef.document(producto.nombre).set(producto).await()
-        } catch (e: Exception) {
-            Log.e("ProductoRepository", "Error al actualizar producto", e)
-            throw e
-        }
-    }
 }

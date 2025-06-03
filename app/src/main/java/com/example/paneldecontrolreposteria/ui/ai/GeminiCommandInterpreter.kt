@@ -1,7 +1,10 @@
 package com.example.paneldecontrolreposteria.ui.ai
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import com.example.paneldecontrolreposteria.model.Ingrediente
+import com.example.paneldecontrolreposteria.model.IngredienteDetalle
 import com.example.paneldecontrolreposteria.model.Pedido
 import com.example.paneldecontrolreposteria.model.Producto
 import com.example.paneldecontrolreposteria.model.ProductoPedido
@@ -36,6 +39,7 @@ class GeminiCommandInterpreter(
             return when (tipo) {
                 "ingrediente" -> interpretarIngrediente(json)
                 "pedido" -> interpretarPedido(json)
+                "producto" -> interpretarProducto(json)
                 else -> {
                     Log.w("GeminiInterpreter", "Tipo no reconocido: $tipo")
                     Comando.ComandoNoReconocido
@@ -123,6 +127,55 @@ class GeminiCommandInterpreter(
         }
     }
 
+    private fun interpretarProducto(json: JSONObject): Comando {
+        val intencion = json.optString("intencion").lowercase()
+        val nombre = json.optString("nombre", "")
+
+        val preparacion = json.optString("preparacion", null)
+        val tips = json.optString("tips", null)
+
+        val ingredientesJson = json.optJSONArray("ingredientes")
+        val ingredientes = ingredientesJson?.let {
+            (0 until it.length()).mapNotNull { i ->
+                it.optJSONObject(i)?.let { ingr ->
+                    IngredienteDetalle(
+                        nombre = ingr.optString("nombre", ""),
+                        unidad = ingr.optString("unidad", ""),
+                        cantidad = ingr.optDouble("cantidad", 0.0),
+                        observacion = ingr.optString("observacion", null)
+                    )
+                }
+            }
+        }
+
+        val utensiliosJson = json.optJSONArray("utensilios")
+        val utensilios = utensiliosJson?.let {
+            (0 until it.length()).mapNotNull { i -> it.optString(i, null) }
+        }
+
+        return when (intencion) {
+            "agregar" -> Comando.AgregarProducto(
+                nombre = nombre,
+                ingredientes = ingredientes ?: emptyList(),
+                preparacion = preparacion,
+                utensilios = utensilios,
+                tips = tips
+            )
+
+            "editar" -> Comando.EditarProducto(
+                nombre = nombre,
+                ingredientes = ingredientes,
+                preparacion = preparacion,
+                utensilios = utensilios,
+                tips = tips
+            )
+
+            "eliminar" -> Comando.EliminarProducto(nombre)
+
+            else -> Comando.ComandoNoReconocido
+        }
+    }
+
     private fun leerProductos(json: JSONObject): List<ProductoPedido> {
         val productos = mutableListOf<ProductoPedido>()
         try {
@@ -145,6 +198,7 @@ class GeminiCommandInterpreter(
         return productos
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun ejecutar(comando: Comando): String {
         return when (comando) {
             is Comando.AgregarPedido -> {
@@ -159,7 +213,7 @@ class GeminiCommandInterpreter(
 
             is Comando.EditarPedido -> {
                 val pedidoExistente = pedidoViewModel.pedidos.value
-                    ?.find { it.cliente.equals(comando.cliente, ignoreCase = true) }
+                    .find { it.cliente.equals(comando.cliente, ignoreCase = true) }
 
                 if (pedidoExistente == null) {
                     "No se encontró el pedido del cliente ${comando.cliente}."
@@ -194,7 +248,7 @@ class GeminiCommandInterpreter(
 
             is Comando.EliminarPedido -> {
                 val pedidoExistente = pedidoViewModel.pedidos.value
-                    ?.find { it.cliente.equals(comando.cliente, ignoreCase = true) }
+                    .find { it.cliente.equals(comando.cliente, ignoreCase = true) }
 
                 if (pedidoExistente == null) {
                     "No se encontró el pedido del cliente ${comando.cliente}."
@@ -205,15 +259,32 @@ class GeminiCommandInterpreter(
             }
 
             is Comando.AgregarIngrediente -> {
+                val existentes = ingredienteViewModel.ingredientes.value
+                var nombreFinal = comando.nombre.trim()
+
+                if (existentes.any { it.nombre.equals(nombreFinal, ignoreCase = true) }) {
+                    var contador = 2
+                    var nuevoNombre: String
+                    do {
+                        nuevoNombre = "$nombreFinal $contador"
+                        contador++
+                    } while (existentes.any { it.nombre.equals(nuevoNombre, ignoreCase = true) })
+                    nombreFinal = nuevoNombre
+                }
+
                 ingredienteViewModel.agregarIngrediente(
-                    Ingrediente(nombre = comando.nombre, unidad = comando.unidad, costoUnidad = comando.costoUnidad)
+                    Ingrediente(
+                        nombre = nombreFinal,
+                        unidad = comando.unidad,
+                        costoUnidad = comando.costoUnidad
+                    )
                 )
-                "Ingrediente ${comando.nombre} agregado correctamente."
+                "Ingrediente \"$nombreFinal\" agregado correctamente."
             }
 
             is Comando.EditarIngrediente -> {
                 val existente = ingredienteViewModel.ingredientes.value
-                    ?.find { it.nombre.equals(comando.nombre, ignoreCase = true) }
+                    .find { it.nombre.equals(comando.nombre, ignoreCase = true) }
 
                 if (existente == null) {
                     "No se encontró el ingrediente ${comando.nombre}."
@@ -229,7 +300,7 @@ class GeminiCommandInterpreter(
 
             is Comando.EliminarIngrediente -> {
                 val existente = ingredienteViewModel.ingredientes.value
-                    ?.find { it.nombre.equals(comando.nombre, ignoreCase = true) }
+                    .find { it.nombre.equals(comando.nombre, ignoreCase = true) }
 
                 if (existente == null) {
                     "No se encontró el ingrediente ${comando.nombre}."
@@ -239,46 +310,119 @@ class GeminiCommandInterpreter(
                 }
             }
 
+            is Comando.AgregarProducto -> {
+                val ingredientesInvalidos = comando.ingredientes?.filterNot { nuevo ->
+                    ingredienteViewModel.ingredientes.value.any {
+                        it.nombre.equals(nuevo.nombre, ignoreCase = true)
+                    }
+                } ?: emptyList()
+
+                return if (ingredientesInvalidos.isNotEmpty()) {
+                    val nombres = ingredientesInvalidos.joinToString(", ") { it.nombre }
+                    "Los siguientes ingredientes no están registrados: $nombres. Agrégalos primero desde la sección de ingredientes."
+                } else {
+                    val existentes = productoViewModel.productos.value
+                    var nombreFinal = comando.nombre.trim()
+
+                    if (existentes.any { it.nombre.equals(nombreFinal, ignoreCase = true) }) {
+                        var contador = 2
+                        var nuevoNombre: String
+                        do {
+                            nuevoNombre = "$nombreFinal $contador"
+                            contador++
+                        } while (existentes.any { it.nombre.equals(nuevoNombre, ignoreCase = true) })
+                        nombreFinal = nuevoNombre
+                    }
+
+                    val producto = Producto(
+                        nombre = nombreFinal,
+                        ingredientes = comando.ingredientes ?: emptyList(),
+                        preparacion = comando.preparacion,
+                        utensilios = comando.utensilios,
+                        tips = comando.tips
+                    )
+                    productoViewModel.agregarProducto(producto)
+                    "Producto \"$nombreFinal\" agregado correctamente."
+                }
+            }
+
+            is Comando.EditarProducto -> {
+                val existente = productoViewModel.productos.value
+                    .find { it.nombre.equals(comando.nombre, ignoreCase = true) }
+
+                if (existente == null) {
+                    "No se encontró el producto ${comando.nombre}."
+                } else {
+                    val ingredientesEditados = if (comando.ingredientes != null) {
+                        val ingredientesInvalidos = comando.ingredientes.filterNot { nuevo ->
+                            ingredienteViewModel.ingredientes.value.any {
+                                it.nombre.equals(nuevo.nombre, ignoreCase = true)
+                            }
+                        }
+
+                        if (ingredientesInvalidos.isNotEmpty()) {
+                            val nombres = ingredientesInvalidos.joinToString(", ") { it.nombre }
+                            return "No se puede editar el producto. Los siguientes ingredientes no están registrados: $nombres. Agrégalos primero desde la sección de ingredientes."
+                        }
+
+                        val actuales = existente.ingredientes.toMutableList()
+                        comando.ingredientes.forEach { nuevo ->
+                            val index = actuales.indexOfFirst {
+                                it.nombre.equals(nuevo.nombre, ignoreCase = true)
+                            }
+
+                            if (nuevo.cantidad == 0.0) {
+                                if (index != -1) actuales.removeAt(index) // eliminar ingrediente
+                            } else {
+                                if (index != -1) {
+                                    actuales[index] = nuevo // actualizar
+                                } else {
+                                    actuales.add(nuevo) // agregar
+                                }
+                            }
+                        }
+                        actuales
+                    } else existente.ingredientes
+
+                    val actualizado = existente.copy(
+                        ingredientes = ingredientesEditados,
+                        preparacion = when (comando.preparacion) {
+                            null -> existente.preparacion
+                            "" -> null
+                            else -> comando.preparacion
+                        },
+                        utensilios = when (comando.utensilios) {
+                            null -> existente.utensilios
+                            emptyList<String>() -> null
+                            else -> comando.utensilios
+                        },
+                        tips = when (comando.tips) {
+                            null -> existente.tips
+                            "" -> null
+                            else -> comando.tips
+                        }
+                    )
+
+                    productoViewModel.actualizarProducto(existente.nombre, actualizado)
+                    "Producto ${comando.nombre} actualizado correctamente."
+                }
+            }
+
+            is Comando.EliminarProducto -> {
+                val existente = productoViewModel.productos.value
+                    .find { it.nombre.equals(comando.nombre, ignoreCase = true) }
+
+                if (existente == null) {
+                    "No se encontró el producto ${comando.nombre}."
+                } else {
+                    productoViewModel.eliminarProducto(existente.id)
+                    "Producto ${comando.nombre} eliminado correctamente."
+                }
+            }
+
             Comando.ComandoNoReconocido -> {
                 "Lo siento, no pude entender tu solicitud. Intenta reformularla."
             }
         }
-    }
-
-    fun extraerNumero(texto: String, campo: String): Int? {
-        val regex = Regex("$campo\\s*(\\d+)", RegexOption.IGNORE_CASE)
-        return regex.find(texto)?.groupValues?.getOrNull(1)?.toIntOrNull()
-    }
-
-    fun extraerFecha(texto: String): String? {
-        return when {
-            "mañana" in texto -> calcularFecha(1)
-            "pasado mañana" in texto -> calcularFecha(2)
-            else -> null
-        }
-    }
-
-    fun calcularFecha(diasFuturos: Int): String {
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_YEAR, diasFuturos)
-        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        return sdf.format(calendar.time)
-    }
-
-    private fun extraerDato(texto: String, clave: String): String? {
-        val regex = Regex("$clave:?\\s*([\\w\\sáéíóúñ]+)", RegexOption.IGNORE_CASE)
-        return regex.find(texto)?.groupValues?.get(1)?.trim()
-    }
-
-    private fun extraerDouble(texto: String, clave: String): Double? {
-        val regex = Regex("$clave:?\\s*([\\d.]+)", RegexOption.IGNORE_CASE)
-        return regex.find(texto)?.groupValues?.get(1)?.toDoubleOrNull()
-    }
-
-    private fun extraerListaProductos(texto: String, clave: String): List<ProductoPedido> {
-        val regex = Regex("$clave:?\\s*([\\w\\s,áéíóúñ]+)", RegexOption.IGNORE_CASE)
-        return regex.find(texto)?.groupValues?.get(1)?.split(",")?.map {
-            ProductoPedido(nombre = it.trim(), cantidad = 1, tamano = 1)
-        } ?: emptyList()
     }
 }

@@ -1,5 +1,7 @@
 package com.example.paneldecontrolreposteria.viewmodel
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -15,6 +17,7 @@ class GeminiViewModel : ViewModel() {
     private val _respuesta = MutableLiveData<String>()
     val respuesta: LiveData<String> = _respuesta
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun procesarYEjecutar(
         texto: String,
         asistenteController: AsistenteController,
