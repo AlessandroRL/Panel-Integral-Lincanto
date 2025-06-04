@@ -205,7 +205,6 @@ fun MainApp(
                             pedidoViewModel = pedidoViewModel,
                             ingredienteViewModel = ingredienteViewModel,
                             productoViewModel = productoViewModel,
-                            productoCostoViewModel = productoCostoViewModel
                         ),
                     ),
                     speechRecognizerManager = speechRecognizerManager

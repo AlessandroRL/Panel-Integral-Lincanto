@@ -12,4 +12,9 @@ class AsistenteController(private val interpreter: GeminiCommandInterpreter) {
         val resultado = interpreter.ejecutar(comando)
         onRespuestaFinal(resultado)
     }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun procesarRespuestaSimple(texto: String): String? {
+        return interpreter.procesarRespuestaSimple(texto)
+    }
 }

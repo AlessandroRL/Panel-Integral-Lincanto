@@ -81,4 +81,5 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.play.services.base)
     coreLibraryDesugaring(libs.desugarJdkLibs)
+    implementation(libs.commons.text)
 }

@@ -11,18 +11,16 @@ import com.example.paneldecontrolreposteria.model.ProductoPedido
 import com.example.paneldecontrolreposteria.viewmodel.PedidoViewModel
 import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
-import com.example.paneldecontrolreposteria.viewmodel.ProductoCostoViewModel
 import org.json.JSONObject
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
+import org.apache.commons.text.similarity.LevenshteinDistance
 
+@Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
 class GeminiCommandInterpreter(
     private val pedidoViewModel: PedidoViewModel,
     private val ingredienteViewModel: IngredienteViewModel,
     private val productoViewModel: ProductoViewModel,
-    private val productoCostoViewModel: ProductoCostoViewModel
 ) {
+    private var comandoPendiente: Pair<Comando, String>? = null
 
     fun interpretar(respuestaGemini: String): Comando {
         return try {
@@ -184,8 +182,8 @@ class GeminiCommandInterpreter(
                 try {
                     val p = productosJson.getJSONObject(i)
                     val nombre = p.getString("nombre")
-                    val tamano = try { p.getInt("tamano") } catch (e: Exception) { p.getDouble("tamano").toInt() }
-                    val cantidad = try { p.getInt("cantidad") } catch (e: Exception) { p.getDouble("cantidad").toInt() }
+                    val tamano = try { p.getInt("tamano") } catch (_: Exception) { p.getDouble("tamano").toInt() }
+                    val cantidad = try { p.getInt("cantidad") } catch (_: Exception) { p.getDouble("cantidad").toInt() }
 
                     productos.add(ProductoPedido(nombre, tamano, cantidad))
                 } catch (e: Exception) {
@@ -200,6 +198,32 @@ class GeminiCommandInterpreter(
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun ejecutar(comando: Comando): String {
+
+        if (comando is Comando.RespuestaSimple) {
+            if (comando.respuesta.equals("no", ignoreCase = true)) {
+                comandoPendiente = null
+                return "De acuerdo. No se realizará ninguna acción."
+            }
+
+            if (comando.respuesta.equals("sí", ignoreCase = true) || comando.respuesta.equals("si", ignoreCase = true)) {
+                val (comandoOriginal, nombreSugerido) = comandoPendiente ?: return "No hay ninguna acción pendiente para confirmar."
+                comandoPendiente = null
+
+                val comandoCorregido = when (comandoOriginal) {
+                    is Comando.EditarProducto -> comandoOriginal.copy(nombre = nombreSugerido)
+                    is Comando.EliminarProducto -> comandoOriginal.copy(nombre = nombreSugerido)
+                    is Comando.EditarIngrediente -> comandoOriginal.copy(nombre = nombreSugerido)
+                    is Comando.EliminarIngrediente -> comandoOriginal.copy(nombre = nombreSugerido)
+                    is Comando.AgregarIngrediente -> comandoOriginal.copy(nombre = nombreSugerido)
+                    else -> return "Este comando no puede ser corregido automáticamente."
+                }
+
+                return ejecutar(comandoCorregido)
+            }
+
+            return "No entendí tu respuesta. Por favor, responde sí o no."
+        }
+
         return when (comando) {
             is Comando.AgregarPedido -> {
                 val pedido = Pedido(
@@ -260,7 +284,14 @@ class GeminiCommandInterpreter(
 
             is Comando.AgregarIngrediente -> {
                 val existentes = ingredienteViewModel.ingredientes.value
-                var nombreFinal = comando.nombre.trim()
+                val nombreOriginal = comando.nombre.trim()
+                var nombreFinal = nombreOriginal
+
+                val nombreSimilar = encontrarIngredienteSimilar(nombreFinal)
+                if (nombreSimilar != null && !nombreSimilar.equals(nombreOriginal, ignoreCase = true)) {
+                    comandoPendiente = comando to nombreSimilar
+                    return "Ya existe un ingrediente llamado \"$nombreSimilar\". ¿Quieres usar ese nombre en lugar de \"$nombreOriginal\"? Responde sí o no."
+                }
 
                 if (existentes.any { it.nombre.equals(nombreFinal, ignoreCase = true) }) {
                     var contador = 2
@@ -287,7 +318,13 @@ class GeminiCommandInterpreter(
                     .find { it.nombre.equals(comando.nombre, ignoreCase = true) }
 
                 if (existente == null) {
-                    "No se encontró el ingrediente ${comando.nombre}."
+                    val nombreSimilar = encontrarIngredienteSimilar(comando.nombre)
+                    return if (nombreSimilar != null) {
+                        comandoPendiente = comando to nombreSimilar
+                        "El ingrediente \"${comando.nombre}\" no fue encontrado. ¿Te refieres a \"$nombreSimilar\"? Responde sí o no."
+                    } else {
+                        "No se encontró ningún ingrediente llamado \"${comando.nombre}\"."
+                    }
                 } else {
                     val actualizado = existente.copy(
                         unidad = comando.unidad ?: existente.unidad,
@@ -303,7 +340,13 @@ class GeminiCommandInterpreter(
                     .find { it.nombre.equals(comando.nombre, ignoreCase = true) }
 
                 if (existente == null) {
-                    "No se encontró el ingrediente ${comando.nombre}."
+                    val nombreSimilar = encontrarIngredienteSimilar(comando.nombre)
+                    return if (nombreSimilar != null) {
+                        comandoPendiente = comando to nombreSimilar
+                        "El ingrediente \"${comando.nombre}\" no fue encontrado. ¿Te refieres a \"$nombreSimilar\"? Responde sí o no."
+                    } else {
+                        "No se encontró ningún ingrediente llamado \"${comando.nombre}\"."
+                    }
                 } else {
                     ingredienteViewModel.eliminarIngrediente(existente.id)
                     "Ingrediente ${comando.nombre} eliminado correctamente."
@@ -347,82 +390,164 @@ class GeminiCommandInterpreter(
             }
 
             is Comando.EditarProducto -> {
-                val existente = productoViewModel.productos.value
-                    .find { it.nombre.equals(comando.nombre, ignoreCase = true) }
+                val productos = productoViewModel.productos.value
+                val nombreIngresado = comando.nombre
+
+                val existente = productos.find { it.nombre.equals(nombreIngresado, ignoreCase = true) }
 
                 if (existente == null) {
-                    "No se encontró el producto ${comando.nombre}."
-                } else {
-                    val ingredientesEditados = if (comando.ingredientes != null) {
-                        val ingredientesInvalidos = comando.ingredientes.filterNot { nuevo ->
-                            ingredienteViewModel.ingredientes.value.any {
-                                it.nombre.equals(nuevo.nombre, ignoreCase = true)
-                            }
-                        }
+                    val nombreSugerido = encontrarNombreMasParecidoConPalabras(nombreIngresado, productos.map { it.nombre })
 
-                        if (ingredientesInvalidos.isNotEmpty()) {
-                            val nombres = ingredientesInvalidos.joinToString(", ") { it.nombre }
-                            return "No se puede editar el producto. Los siguientes ingredientes no están registrados: $nombres. Agrégalos primero desde la sección de ingredientes."
-                        }
-
-                        val actuales = existente.ingredientes.toMutableList()
-                        comando.ingredientes.forEach { nuevo ->
-                            val index = actuales.indexOfFirst {
-                                it.nombre.equals(nuevo.nombre, ignoreCase = true)
-                            }
-
-                            if (nuevo.cantidad == 0.0) {
-                                if (index != -1) actuales.removeAt(index) // eliminar ingrediente
-                            } else {
-                                if (index != -1) {
-                                    actuales[index] = nuevo // actualizar
-                                } else {
-                                    actuales.add(nuevo) // agregar
-                                }
-                            }
-                        }
-                        actuales
-                    } else existente.ingredientes
-
-                    val actualizado = existente.copy(
-                        ingredientes = ingredientesEditados,
-                        preparacion = when (comando.preparacion) {
-                            null -> existente.preparacion
-                            "" -> null
-                            else -> comando.preparacion
-                        },
-                        utensilios = when (comando.utensilios) {
-                            null -> existente.utensilios
-                            emptyList<String>() -> null
-                            else -> comando.utensilios
-                        },
-                        tips = when (comando.tips) {
-                            null -> existente.tips
-                            "" -> null
-                            else -> comando.tips
-                        }
-                    )
-
-                    productoViewModel.actualizarProducto(existente.nombre, actualizado)
-                    "Producto ${comando.nombre} actualizado correctamente."
+                    return if (nombreSugerido != null) {
+                        comandoPendiente = comando to nombreSugerido
+                        "El producto \"${nombreIngresado}\" no fue encontrado. ¿Te refieres a \"$nombreSugerido\"? Responde sí o no."
+                    } else {
+                        "No se encontró el producto \"$nombreIngresado\" y no se encontró ningún nombre similar."
+                    }
                 }
+
+                val ingredientesEditados = if (comando.ingredientes != null) {
+                    val ingredientesInvalidos = comando.ingredientes.filterNot { nuevo ->
+                        ingredienteViewModel.ingredientes.value.any {
+                            it.nombre.equals(nuevo.nombre, ignoreCase = true)
+                        }
+                    }
+
+                    if (ingredientesInvalidos.isNotEmpty()) {
+                        val nombres = ingredientesInvalidos.joinToString(", ") { it.nombre }
+                        return "No se puede editar el producto. Los siguientes ingredientes no están registrados: $nombres. Agrégalos primero desde la sección de ingredientes."
+                    }
+
+                    val actuales = existente.ingredientes.toMutableList()
+                    comando.ingredientes.forEach { nuevo ->
+                        val index = actuales.indexOfFirst {
+                            it.nombre.equals(nuevo.nombre, ignoreCase = true)
+                        }
+
+                        if (nuevo.cantidad == 0.0) {
+                            if (index != -1) actuales.removeAt(index) // eliminar ingrediente
+                        } else {
+                            if (index != -1) {
+                                actuales[index] = nuevo // actualizar
+                            } else {
+                                actuales.add(nuevo) // agregar
+                            }
+                        }
+                    }
+                    actuales
+                } else existente.ingredientes
+
+                val actualizado = existente.copy(
+                    ingredientes = ingredientesEditados,
+                    preparacion = when (comando.preparacion) {
+                        null -> existente.preparacion
+                        "" -> null
+                        else -> comando.preparacion
+                    },
+                    utensilios = when (comando.utensilios) {
+                        null -> existente.utensilios
+                        emptyList<String>() -> null
+                        else -> comando.utensilios
+                    },
+                    tips = when (comando.tips) {
+                        null -> existente.tips
+                        "" -> null
+                        else -> comando.tips
+                    }
+                )
+
+                productoViewModel.actualizarProducto(existente.nombre, actualizado)
+                "Producto \"${existente.nombre}\" actualizado correctamente."
             }
 
             is Comando.EliminarProducto -> {
-                val existente = productoViewModel.productos.value
-                    .find { it.nombre.equals(comando.nombre, ignoreCase = true) }
+                val productos = productoViewModel.productos.value
+                val nombreIngresado = comando.nombre.trim()
+
+                val existente = productos.find { it.nombre.equals(nombreIngresado, ignoreCase = true) }
 
                 if (existente == null) {
-                    "No se encontró el producto ${comando.nombre}."
-                } else {
-                    productoViewModel.eliminarProducto(existente.id)
-                    "Producto ${comando.nombre} eliminado correctamente."
+                    val nombreSugerido = encontrarNombreMasParecidoConPalabras(nombreIngresado, productos.map { it.nombre })
+
+                    return if (nombreSugerido != null) {
+                        comandoPendiente = comando to nombreSugerido
+                        "El producto \"$nombreIngresado\" no fue encontrado. ¿Te refieres a \"$nombreSugerido\"? Responde sí o no."
+                    } else {
+                        "No se encontró el producto \"$nombreIngresado\" y no se encontró ningún nombre similar."
+                    }
                 }
+
+                productoViewModel.eliminarProducto(existente.id)
+                "Producto \"${existente.nombre}\" eliminado correctamente."
             }
 
             Comando.ComandoNoReconocido -> {
                 "Lo siento, no pude entender tu solicitud. Intenta reformularla."
             }
+            else -> "Comando no reconocido."
         }
+    }
+
+    private fun encontrarIngredienteSimilar(nombreBuscado: String): String? {
+        val nombreNormalizado = normalizar(nombreBuscado)
+        val ingredientes = ingredienteViewModel.ingredientes.value
+
+        return ingredientes
+            .map { it.nombre to normalizar(it.nombre) }
+            .maxByOrNull { (_, normalizado) -> similaridad(nombreNormalizado, normalizado) }
+            ?.let { (original, normalizado) ->
+                if (similaridad(nombreNormalizado, normalizado) >= 0.8) original else null
+            }
+    }
+
+    fun encontrarNombreMasParecidoConPalabras(nombreIngresado: String, listaNombres: List<String>): String? {
+        val palabrasClave = nombreIngresado.lowercase().split(" ").filter { it.length > 2 }
+
+        val coincidencias = listaNombres.mapNotNull { nombreExistente ->
+            val palabrasExistente = nombreExistente.lowercase().split(" ")
+            val coincidencia = palabrasClave.count { it in palabrasExistente }
+            if (coincidencia > 0) {
+                Triple(nombreExistente, coincidencia, similaridad(nombreIngresado.lowercase(), nombreExistente.lowercase()))
+            } else null
+        }
+
+        return coincidencias
+            .sortedWith(Comparator { a, b ->
+                when {
+                    a.second != b.second -> b.second.compareTo(a.second)
+                    else -> a.third.compareTo(b.third)
+                }
+            })
+            .firstOrNull()?.first
+    }
+
+    private fun similaridad(a: String, b: String): Double {
+        val distancia = LevenshteinDistance().apply(a, b)
+        return 1.0 - distancia.toDouble() / maxOf(a.length, b.length)
+    }
+
+    private fun normalizar(nombre: String): String {
+        val stopWords = listOf("de", "en", "la", "el", "los", "las", "del", "un", "una")
+        return nombre
+            .lowercase()
+            .replace(Regex("[áàäâ]"), "a")
+            .replace(Regex("[éèëê]"), "e")
+            .replace(Regex("[íìïî]"), "i")
+            .replace(Regex("[óòöô]"), "o")
+            .replace(Regex("[úùüû]"), "u")
+            .replace(Regex("[^a-z0-9 ]"), "") // eliminar signos
+            .split(" ")
+            .filter { it.isNotBlank() && it !in stopWords }
+            .sorted()
+            .joinToString(" ")
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun procesarRespuestaSimple(texto: String): String? {
+        if (comandoPendiente != null && (texto.equals("sí", ignoreCase = true) || texto.equals("no", ignoreCase = true))) {
+            val comandoRespuesta = Comando.RespuestaSimple(texto.lowercase())
+            return ejecutar(comandoRespuesta)
+        }
+        return null
     }
 }

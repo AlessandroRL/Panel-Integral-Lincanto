@@ -1,5 +1,6 @@
 [versions]
 agp = "8.10.1"
+commonsText = "1.10.0"
 coreSplashscreen = "1.0.1"
 generativeai = "0.9.0"
 kotlin = "2.0.21"
@@ -26,6 +27,7 @@ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = 
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-material = { module = "androidx.compose.material:material", version.ref = "materialVersion" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+commons-text = { module = "org.apache.commons:commons-text", version.ref = "commonsText" }
 generativeai = { module = "com.google.ai.client.generativeai:generativeai", version.ref = "generativeai" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

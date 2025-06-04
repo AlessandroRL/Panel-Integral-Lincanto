@@ -90,6 +90,7 @@ class GeminiManager {
         Devuelve solo el JSON. No escribas ningún texto adicional, explicación ni etiquetas como "Respuesta:" o "Output:".
 
         En el nombre del pedido haz que la primera letra de cada palabra esté en mayúscula, excepto artículos y preposiciones (ejemplo: "Pastel De Chocolate").
+        Ademas no tengas e cuenta tildes para ningún campo.
         
         Ejemplo válido de agregar un pedido:
         {
@@ -145,6 +146,7 @@ class GeminiManager {
         Devuelve exclusivamente un objeto JSON válido con los siguientes campos:
         
         En caso de agregar o editar un ingrediente: haz que la primera letra de la primera palabra esté en mayúscula.
+        Ademas no tengas e cuenta tildes para ningún campo.
 
         - "tipo": "ingrediente"
         - "intencion": uno de ["agregar", "editar", "eliminar"]
