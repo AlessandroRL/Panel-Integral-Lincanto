@@ -39,7 +39,7 @@ class IngredienteViewModel : ViewModel() {
 
     fun editarIngrediente(ingrediente: Ingrediente) {
         viewModelScope.launch {
-            repository.agregarIngrediente(ingrediente) // Reutilizamos set con el mismo ID
+            repository.agregarIngrediente(ingrediente)
             cargarIngredientes()
         }
     }
@@ -61,5 +61,4 @@ class IngredienteViewModel : ViewModel() {
         if (texto.isBlank()) lista
         else lista.filter { it.nombre.contains(texto, ignoreCase = true) }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-
 }

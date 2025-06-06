@@ -36,6 +36,13 @@ sealed class Comando {
     ) : Comando()
     data class EliminarProducto(val nombre: String) : Comando()
 
+    data class ConsultarPedidos(val tipo: String) : Comando()
+    data class ConsultarIngredientesTotales(val dummy: Boolean = true) : Comando()
+    data class ConsultarSiIngredienteExiste(val nombre: String) : Comando()
+    data class ConsultarListaIngredientes(val dummy: Boolean = true) : Comando()
+    data class ConsultarListaProductos(val dummy: Boolean = true) : Comando()
+    data class ConsultarInfoProducto(val nombre: String) : Comando()
+
     data class RespuestaSimple(val respuesta: String) : Comando()
     object ComandoNoReconocido : Comando()
 }

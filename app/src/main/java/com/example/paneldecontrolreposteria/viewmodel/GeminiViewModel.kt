@@ -2,6 +2,9 @@ package com.example.paneldecontrolreposteria.viewmodel
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -18,6 +21,8 @@ class GeminiViewModel : ViewModel() {
 
     data class MensajeAsistente(val emisor: Emisor, val contenido: String)
     enum class Emisor { USUARIO, ASISTENTE }
+    var hablarRespuestas by mutableStateOf(false)
+
 
     private val _mensajes = MutableLiveData<List<MensajeAsistente>>(emptyList())
     val mensajes: LiveData<List<MensajeAsistente>> = _mensajes

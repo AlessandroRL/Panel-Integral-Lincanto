@@ -39,6 +39,10 @@ class GeminiManager {
 
     private fun construirPrompt(instruccion: String): String {
         return when {
+            Regex("consultar|cu[aá]les?|qu[eé]|tengo|hay|mu[eé]strame|lista|cu[aá]ntos?", RegexOption.IGNORE_CASE).containsMatchIn(instruccion) -> {
+                construirPromptParaConsultaInformativa(instruccion)
+            }
+
             Regex("ingrediente[s]?", RegexOption.IGNORE_CASE).containsMatchIn(instruccion) -> {
                 construirPromptParaIngrediente(instruccion)
             }
@@ -51,7 +55,7 @@ class GeminiManager {
                 construirPromptParaPedido(instruccion)
             }
         }
-        return """
+    return """
 
         IMPORTANTE:
         - Si en la misma instruccion se mencionan las palabras "pedido" y "producto", asume que se trata de un pedido y no de un producto general.
@@ -208,6 +212,59 @@ class GeminiManager {
         
         Instrucción del usuario:
         "$instruccion"
+    """.trimIndent()
+    }
+
+    private fun construirPromptParaConsultaInformativa(instruccion: String): String {
+        return """
+        Eres un asistente de gestión de una repostería. El usuario hará preguntas informativas sobre los pedidos, ingredientes o productos.
+
+        Devuelve exclusivamente un objeto JSON, sin ningún texto adicional.
+        Si no se menciona especificamente la palabra "consulta", no se trata de una consulta informativa.
+
+        FORMATO DEL JSON SEGÚN TIPO DE CONSULTA:
+
+        - Para consultar pedidos:
+        {
+          "intencion": "consultar_pedidos",
+          "rango": "semana" // puede ser "hoy", "mañana", "semana", "mes" o "todos"
+        }
+
+        - Para saber si un ingrediente existe:
+        {
+          "intencion": "consultar_ingredientes",
+          "nombreIngrediente": "canela"
+        }
+
+        - Para saber cuántos ingredientes hay en total:
+        {
+          "intencion": "consultar_ingredientes",
+          "cantidadTotal": true
+        }
+
+        - Para listar todos los ingredientes:
+        {
+          "intencion": "consultar_ingredientes"
+        }
+
+        - Para listar productos registrados:
+        {
+          "intencion": "consultar_productos"
+        }
+
+        - Para obtener toda la información de un producto específico:
+        {
+          "intencion": "consultar_productos",
+          "nombreProducto": "torta tres leches"
+        }
+
+        IMPORTANTE:
+        - Siempre responde solo con un JSON.
+        - No agregues explicaciones ni texto adicional.
+        - No incluyas saltos de línea innecesarios.
+        - Usa exactamente los nombres de clave indicados.
+        
+        Instrucción: "$instruccion"
     """.trimIndent()
     }
 }

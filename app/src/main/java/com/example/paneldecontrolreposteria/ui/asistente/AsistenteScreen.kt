@@ -1,6 +1,8 @@
 package com.example.paneldecontrolreposteria.ui.asistente
 
 import android.os.Build
+import android.speech.tts.TextToSpeech
+import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
@@ -24,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.example.paneldecontrolreposteria.ui.asistente.voice.SpeechRecognizerManager
 import com.example.paneldecontrolreposteria.viewmodel.GeminiViewModel
 import androidx.compose.foundation.lazy.items
+import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -37,6 +40,29 @@ fun AsistenteScreen(
     val mensajes by geminiViewModel.mensajes.observeAsState(emptyList())
     var isListening by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val tts = remember {
+        TextToSpeech(contexto) { status ->
+            if (status != TextToSpeech.SUCCESS) {
+                Log.e("AsistenteScreen", "Error inicializando TextToSpeech")
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val resultado = tts.setLanguage(Locale("es", "ES"))
+        if (resultado == TextToSpeech.LANG_MISSING_DATA || resultado == TextToSpeech.LANG_NOT_SUPPORTED) {
+            Log.e("AsistenteScreen", "Idioma no soportado para TTS")
+        }
+    }
+
+    LaunchedEffect(mensajes.size) {
+        mensajes.lastOrNull { it.emisor == GeminiViewModel.Emisor.ASISTENTE }?.let { mensaje ->
+            if (geminiViewModel.hablarRespuestas) {
+                tts.speak(mensaje.contenido, TextToSpeech.QUEUE_FLUSH, null, "msg_id")
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -86,6 +112,22 @@ fun AsistenteScreen(
             )
 
             Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Leer respuestas en voz alta",
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = geminiViewModel.hablarRespuestas,
+                    onCheckedChange = { geminiViewModel.hablarRespuestas = it }
+                )
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -165,8 +207,11 @@ fun AsistenteScreen(
                 errorMessage = error
             }
         }
+
         onDispose {
             speechRecognizerManager.destroy()
+            tts.stop()
+            tts.shutdown()
         }
     }
 }

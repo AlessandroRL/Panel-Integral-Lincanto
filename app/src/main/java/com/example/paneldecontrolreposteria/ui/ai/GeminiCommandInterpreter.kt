@@ -13,6 +13,8 @@ import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
 import org.json.JSONObject
 import org.apache.commons.text.similarity.LevenshteinDistance
+import java.time.LocalDate
+import java.time.temporal.ChronoField
 
 @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
 class GeminiCommandInterpreter(
@@ -32,14 +34,26 @@ class GeminiCommandInterpreter(
             Log.d("GeminiInterpreter", "JSON limpio:\n$limpio")
 
             val json = JSONObject(limpio)
-            val tipo = json.optString("tipo", "pedido").lowercase()
+            val intencion = json.optString("intencion", "").lowercase()
+
+            val tipo = when {
+                json.has("tipo") -> json.optString("tipo", "").lowercase()
+                intencion.startsWith("consultar") -> "consulta"
+                json.has("nombre") && json.has("unidad") -> "ingrediente"
+                json.has("nombre") && json.has("ingredientes") -> "producto"
+                json.has("cliente") && json.has("productos") -> "pedido"
+
+                intencion in listOf("agregar", "editar", "eliminar") -> "pedido"
+                else -> "desconocido"
+            }
 
             return when (tipo) {
                 "ingrediente" -> interpretarIngrediente(json)
-                "pedido" -> interpretarPedido(json)
                 "producto" -> interpretarProducto(json)
+                "pedido" -> interpretarPedido(json)
+                "consulta" -> interpretarConsulta(json)
                 else -> {
-                    Log.w("GeminiInterpreter", "Tipo no reconocido: $tipo")
+                    Log.w("GeminiInterpreter", "Tipo no reconocido: \"$tipo\" en respuesta: $limpio")
                     Comando.ComandoNoReconocido
                 }
             }
@@ -196,6 +210,59 @@ class GeminiCommandInterpreter(
         return productos
     }
 
+    private fun interpretarConsulta(json: JSONObject): Comando {
+        val intencion = json.optString("intencion", "").lowercase()
+
+        if (intencion.isBlank()) {
+            Log.w("GeminiInterpreter", "Consulta sin intención especificada")
+            return Comando.ComandoNoReconocido
+        }
+
+        return when (intencion) {
+            "consultar_pedidos" -> {
+                val rango = json.optString("rango", "todos")
+                Comando.ConsultarPedidos(rango)
+            }
+
+            "consultar_ingredientes" -> {
+                when {
+                    json.has("nombreIngrediente") -> {
+                        val nombre = json.optString("nombreIngrediente", "").trim()
+                        if (nombre.isBlank()) {
+                            Comando.ComandoNoReconocido
+                        } else {
+                            Comando.ConsultarSiIngredienteExiste(nombre)
+                        }
+                    }
+                    json.optBoolean("cantidadTotal", false) -> {
+                        Comando.ConsultarIngredientesTotales()
+                    }
+                    else -> {
+                        Comando.ConsultarListaIngredientes()
+                    }
+                }
+            }
+
+            "consultar_productos" -> {
+                if (json.has("nombreProducto")) {
+                    val nombre = json.optString("nombreProducto", "").trim()
+                    if (nombre.isBlank()) {
+                        Comando.ComandoNoReconocido
+                    } else {
+                        Comando.ConsultarInfoProducto(nombre)
+                    }
+                } else {
+                    Comando.ConsultarListaProductos()
+                }
+            }
+
+            else -> {
+                Log.w("GeminiInterpreter", "Objeto de consulta no reconocido: $intencion")
+                Comando.ComandoNoReconocido
+            }
+        }
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun ejecutar(comando: Comando): String {
 
@@ -215,6 +282,8 @@ class GeminiCommandInterpreter(
                     is Comando.EditarIngrediente -> comandoOriginal.copy(nombre = nombreSugerido)
                     is Comando.EliminarIngrediente -> comandoOriginal.copy(nombre = nombreSugerido)
                     is Comando.AgregarIngrediente -> comandoOriginal.copy(nombre = nombreSugerido)
+                    is Comando.ConsultarInfoProducto -> comandoOriginal.copy(nombre = nombreSugerido)
+                    is Comando.ConsultarSiIngredienteExiste -> comandoOriginal.copy(nombre = nombreSugerido)
                     else -> return "Este comando no puede ser corregido automáticamente."
                 }
 
@@ -481,6 +550,97 @@ class GeminiCommandInterpreter(
                 "Producto \"${existente.nombre}\" eliminado correctamente."
             }
 
+            is Comando.ConsultarPedidos -> {
+                val pedidos = pedidoViewModel.pedidos.value
+                val tipo = comando.tipo
+                val hoy = LocalDate.now()
+
+                val filtrados = when (tipo) {
+                    "hoy" -> pedidos.filter {
+                        LocalDate.parse(it.fechaLimite) == hoy
+                    }
+                    "semana" -> pedidos.filter {
+                        val fecha = LocalDate.parse(it.fechaLimite)
+                        val semanaHoy = hoy.get(ChronoField.ALIGNED_WEEK_OF_YEAR)
+                        val semanaPedido = fecha.get(ChronoField.ALIGNED_WEEK_OF_YEAR)
+                        semanaHoy == semanaPedido && hoy.year == fecha.year
+                    }
+                    "mes" -> pedidos.filter {
+                        val fecha = LocalDate.parse(it.fechaLimite)
+                        fecha.month == hoy.month && fecha.year == hoy.year
+                    }
+                    else -> emptyList()
+                }
+
+                return if (filtrados.isEmpty()) {
+                    "No hay pedidos para $tipo."
+                } else {
+                    "Tienes ${filtrados.size} pedido(s) para $tipo:\n" +
+                            filtrados.joinToString("\n") { "- ${it.cliente}: ${it.fechaLimite}" }
+                }
+            }
+
+            is Comando.ConsultarIngredientesTotales -> {
+                val total = ingredienteViewModel.ingredientes.value.size
+                return "Tienes $total ingredientes registrados."
+            }
+
+            is Comando.ConsultarSiIngredienteExiste -> {
+                val ingredientes = ingredienteViewModel.ingredientes.value
+                val nombreIngresado = comando.nombre
+
+                val existente = ingredientes.find { it.nombre.equals(nombreIngresado, ignoreCase = true) }
+
+                if (existente == null) {
+                    val nombreSugerido = encontrarIngredienteSimilar(nombreIngresado)
+
+                    return if (nombreSugerido != null) {
+                        comandoPendiente = comando to nombreSugerido
+                        "El ingrediente \"$nombreIngresado\" no fue encontrado. ¿Te refieres a \"$nombreSugerido\"? Responde sí o no."
+                    } else {
+                        "No se encontró el ingrediente \"$nombreIngresado\" y no se encontró ningún nombre similar."
+                    }
+                }
+
+                return "Sí, el ingrediente \"${nombreIngresado}\" está registrado."
+            }
+
+            is Comando.ConsultarListaIngredientes -> {
+                val lista = ingredienteViewModel.ingredientes.value
+                return if (lista.isEmpty()) "No tienes ingredientes aún."
+                else "Ingredientes:\n" + lista.joinToString("\n") { "- ${it.nombre}" }
+            }
+
+            is Comando.ConsultarListaProductos -> {
+                val lista = productoViewModel.productos.value
+                return if (lista.isEmpty()) "No tienes productos aún."
+                else "Productos:\n" + lista.joinToString("\n") { "- ${it.nombre}" }
+            }
+
+            is Comando.ConsultarInfoProducto -> {
+                val productos = productoViewModel.productos.value
+                val nombreIngresado = comando.nombre
+
+                val existente = productos.find { it.nombre.equals(nombreIngresado, ignoreCase = true) }
+
+                if (existente == null) {
+                    val nombreSugerido = encontrarNombreMasParecidoConPalabras(nombreIngresado, productos.map { it.nombre })
+
+                    return if (nombreSugerido != null) {
+                        comandoPendiente = comando to nombreSugerido
+                        "El producto \"$nombreIngresado\" no fue encontrado. ¿Te refieres a \"$nombreSugerido\"? Responde sí o no."
+                    } else {
+                        "No se encontró el producto \"$nombreIngresado\" y no se encontró ningún nombre similar."
+                    }
+                }
+
+                val info = existente
+                return "📦 Producto: ${info.nombre}\n" +
+                        "📝 Preparación: ${info.preparacion}\n" +
+                        "📋 Ingredientes:\n" +
+                        info.ingredientes.joinToString("\n") { "- ${it.nombre} (${it.cantidad})" }
+            }
+
             Comando.ComandoNoReconocido -> {
                 "Lo siento, no pude entender tu solicitud. Intenta reformularla."
             }
@@ -535,7 +695,7 @@ class GeminiCommandInterpreter(
             .replace(Regex("[íìïî]"), "i")
             .replace(Regex("[óòöô]"), "o")
             .replace(Regex("[úùüû]"), "u")
-            .replace(Regex("[^a-z0-9 ]"), "") // eliminar signos
+            .replace(Regex("[^a-z0-9 ]"), "")
             .split(" ")
             .filter { it.isNotBlank() && it !in stopWords }
             .sorted()
