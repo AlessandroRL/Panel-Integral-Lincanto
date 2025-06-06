@@ -246,10 +246,12 @@ class GeminiCommandInterpreter(
             "consultar_productos" -> {
                 if (json.has("nombreProducto")) {
                     val nombre = json.optString("nombreProducto", "").trim()
+                    val campo = json.optString("campo", "todo").lowercase()
+
                     if (nombre.isBlank()) {
                         Comando.ComandoNoReconocido
                     } else {
-                        Comando.ConsultarInfoProducto(nombre)
+                        Comando.ConsultarInfoProducto(nombre, campo)
                     }
                 } else {
                     Comando.ConsultarListaProductos()
@@ -575,8 +577,13 @@ class GeminiCommandInterpreter(
                 return if (filtrados.isEmpty()) {
                     "No hay pedidos para $tipo."
                 } else {
-                    "Tienes ${filtrados.size} pedido(s) para $tipo:\n" +
-                            filtrados.joinToString("\n") { "- ${it.cliente}: ${it.fechaLimite}" }
+                    "Tienes ${filtrados.size} pedido(s) para $tipo:\n\n" +
+                            filtrados.joinToString("\n\n") { pedido ->
+                                val productosTexto = pedido.productos.joinToString("\n") { prod ->
+                                    "    - ${prod.nombre} (${prod.tamano}), Cantidad: ${prod.cantidad}"
+                                }
+                                "- ${pedido.cliente}: ${pedido.fechaLimite}\n$productosTexto"
+                            }
                 }
             }
 
@@ -627,7 +634,7 @@ class GeminiCommandInterpreter(
                     val nombreSugerido = encontrarNombreMasParecidoConPalabras(nombreIngresado, productos.map { it.nombre })
 
                     return if (nombreSugerido != null) {
-                        comandoPendiente = comando to nombreSugerido
+                        comandoPendiente = comando.copy(nombre = nombreSugerido) to nombreSugerido
                         "El producto \"$nombreIngresado\" no fue encontrado. ¿Te refieres a \"$nombreSugerido\"? Responde sí o no."
                     } else {
                         "No se encontró el producto \"$nombreIngresado\" y no se encontró ningún nombre similar."
@@ -635,10 +642,44 @@ class GeminiCommandInterpreter(
                 }
 
                 val info = existente
-                return "📦 Producto: ${info.nombre}\n" +
-                        "📝 Preparación: ${info.preparacion}\n" +
-                        "📋 Ingredientes:\n" +
-                        info.ingredientes.joinToString("\n") { "- ${it.nombre} (${it.cantidad})" }
+
+                return when (comando.campo.lowercase().trim()) {
+                    "ingredientes" -> {
+                        val lista = info.ingredientes.joinToString("\n") { "- ${it.nombre} (${it.cantidad})" }
+                        "🧾 Ingredientes de ${info.nombre}:\n$lista"
+                    }
+
+                    "preparacion" -> "🧑‍🍳 Preparación de ${info.nombre}:\n${info.preparacion?.trim().orEmpty()}"
+
+                    "utensilios" -> "🧰 🧰 Utensilios necesarios para ${info.nombre}:\n${info.utensilios?.joinToString("\n")?.trim().orEmpty()}"
+
+                    "tips" -> "💡 Tips para ${info.nombre}:\n${info.tips?.trim().orEmpty()}"
+
+                    "todo" -> {
+                        val ingredientesStr = info.ingredientes.joinToString("\n") { "- ${it.nombre} (${it.cantidad})" }.trim()
+                        val preparacionStr = info.preparacion?.trim().orEmpty()
+                        val utensiliosStr = info.utensilios?.joinToString("\n")?.trim().orEmpty()
+                        val tipsStr = info.tips?.trim().orEmpty()
+
+                        """
+📦 Producto: ${info.nombre}
+    
+🧾 Ingredientes:
+$ingredientesStr
+
+🧑‍🍳 Preparación:
+$preparacionStr
+
+🧰 Utensilios:
+$utensiliosStr
+
+💡 Tips:
+$tipsStr
+""".trimIndent()
+                    }
+
+                    else -> "No se reconoció la parte solicitada de ${info.nombre}. Usa ingredientes, preparación, utensilios, tips o todo."
+                }
             }
 
             Comando.ComandoNoReconocido -> {

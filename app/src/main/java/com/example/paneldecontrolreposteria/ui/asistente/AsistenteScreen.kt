@@ -2,6 +2,7 @@ package com.example.paneldecontrolreposteria.ui.asistente
 
 import android.os.Build
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -41,25 +42,36 @@ fun AsistenteScreen(
     var isListening by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    val tts = remember {
-        TextToSpeech(contexto) { status ->
-            if (status != TextToSpeech.SUCCESS) {
-                Log.e("AsistenteScreen", "Error inicializando TextToSpeech")
+    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+    var ttsDisponible by remember { mutableStateOf(false) }
+
+    DisposableEffect(Unit) {
+        val ttsLocal = TextToSpeech(contexto) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val result = tts?.setLanguage(Locale("es", "ES"))
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    Log.e("AsistenteScreen", "Idioma español no soportado para TTS")
+                } else {
+                    ttsDisponible = true
+                }
+            } else {
+                Log.e("AsistenteScreen", "Error al inicializar TTS")
             }
         }
-    }
 
-    LaunchedEffect(Unit) {
-        val resultado = tts.setLanguage(Locale("es", "ES"))
-        if (resultado == TextToSpeech.LANG_MISSING_DATA || resultado == TextToSpeech.LANG_NOT_SUPPORTED) {
-            Log.e("AsistenteScreen", "Idioma no soportado para TTS")
+        tts = ttsLocal
+
+        onDispose {
+            ttsLocal.stop()
+            ttsLocal.shutdown()
+            tts = null
         }
     }
 
     LaunchedEffect(mensajes.size) {
         mensajes.lastOrNull { it.emisor == GeminiViewModel.Emisor.ASISTENTE }?.let { mensaje ->
-            if (geminiViewModel.hablarRespuestas) {
-                tts.speak(mensaje.contenido, TextToSpeech.QUEUE_FLUSH, null, "msg_id")
+            if (geminiViewModel.hablarRespuestas && ttsDisponible) {
+                tts?.speak(mensaje.contenido, TextToSpeech.QUEUE_FLUSH, null, "msg_id")
             }
         }
     }
@@ -86,7 +98,9 @@ fun AsistenteScreen(
 
                 Box(
                     contentAlignment = alignment,
-                    modifier = Modifier.fillMaxWidth().padding(4.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(4.dp)
                 ) {
                     Card(
                         colors = CardDefaults.cardColors(containerColor = backgroundColor),
@@ -208,10 +222,18 @@ fun AsistenteScreen(
             }
         }
 
+        tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {}
+            override fun onDone(utteranceId: String?) {}
+            override fun onError(utteranceId: String?) {
+                Log.e("AsistenteTTS", "Error al hablar")
+            }
+        })
+
         onDispose {
             speechRecognizerManager.destroy()
-            tts.stop()
-            tts.shutdown()
+            tts?.stop()
+            tts?.shutdown()
         }
     }
 }

@@ -19,7 +19,11 @@ class GeminiViewModel : ViewModel() {
 
     private val geminiManager = GeminiManager()
 
-    data class MensajeAsistente(val emisor: Emisor, val contenido: String)
+    data class MensajeAsistente(
+        val emisor: Emisor,
+        val contenido: String,
+        val modoLibre: Boolean = false
+    )
     enum class Emisor { USUARIO, ASISTENTE }
     var hablarRespuestas by mutableStateOf(false)
 
@@ -76,6 +80,11 @@ class GeminiViewModel : ViewModel() {
         return respuesta
     }
 
+    private fun agregarMensaje(contenido: String, emisor: Emisor, modoLibre: Boolean = false) {
+        val nuevos = _mensajes.value.orEmpty() + MensajeAsistente(emisor, contenido, modoLibre)
+        _mensajes.value = nuevos
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun procesarYEjecutar(
         texto: String,
@@ -83,6 +92,18 @@ class GeminiViewModel : ViewModel() {
         onRespuestaFinal: (String) -> Unit
     ) {
         agregarMensaje(texto, Emisor.USUARIO)
+
+        if (texto.lowercase().startsWith("asistente")) {
+            val consultaLibre = texto.removePrefix("asistente").trim()
+
+            viewModelScope.launch {
+                val respuestaLibre = geminiManager.obtenerRespuestaLibre(consultaLibre)
+                val respuestaFormateada = formatearRespuestaLegible(respuestaLibre)
+                agregarMensaje(respuestaFormateada, Emisor.ASISTENTE, modoLibre = true)
+                onRespuestaFinal(respuestaFormateada)
+            }
+            return
+        }
 
         val respuestaLocal = asistenteController.procesarRespuestaSimple(texto)
         if (respuestaLocal != null) {
@@ -95,6 +116,7 @@ class GeminiViewModel : ViewModel() {
             val resultado = geminiManager.obtenerRespuesta(texto)
             val resultadoFormateado = formatearRespuestaLegible(resultado)
             agregarMensaje(resultadoFormateado, Emisor.ASISTENTE)
+
             asistenteController.interpretarYActuar(resultado) { respuestaFinal ->
                 if (respuestaFinal.isNotBlank()) {
                     agregarMensaje(respuestaFinal, Emisor.ASISTENTE)

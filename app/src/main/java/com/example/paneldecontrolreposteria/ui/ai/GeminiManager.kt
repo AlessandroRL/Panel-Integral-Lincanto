@@ -220,7 +220,7 @@ class GeminiManager {
         Eres un asistente de gestión de una repostería. El usuario hará preguntas informativas sobre los pedidos, ingredientes o productos.
 
         Devuelve exclusivamente un objeto JSON, sin ningún texto adicional.
-        Si no se menciona especificamente la palabra "consulta", no se trata de una consulta informativa.
+        Si no se menciona específicamente la palabra "consulta", no se trata de una consulta informativa.
 
         FORMATO DEL JSON SEGÚN TIPO DE CONSULTA:
 
@@ -258,6 +258,13 @@ class GeminiManager {
           "nombreProducto": "torta tres leches"
         }
 
+        - Para obtener una parte específica de un producto (ingredientes, preparación, utensilios o tips):
+        {
+          "intencion": "consultar_productos",
+          "nombreProducto": "torta tres leches",
+          "campo": "ingredientes" // puede ser "ingredientes", "preparacion", "utensilios", "tips" o "todo"
+        }
+
         IMPORTANTE:
         - Siempre responde solo con un JSON.
         - No agregues explicaciones ni texto adicional.
@@ -266,5 +273,35 @@ class GeminiManager {
         
         Instrucción: "$instruccion"
     """.trimIndent()
+    }
+
+    suspend fun obtenerRespuestaLibre(pregunta: String): String = withContext(Dispatchers.IO) {
+        try {
+            val request = GeminiRequest(
+                contents = listOf(
+                    GeminiContent(
+                        parts = listOf(GeminiPart(text = pregunta))
+                    )
+                )
+            )
+
+            val response = GeminiService.api.generarRespuesta(request)
+
+            if (response.isSuccessful) {
+                val textoRespuesta = response.body()
+                    ?.candidates
+                    ?.firstOrNull()
+                    ?.content
+                    ?.parts
+                    ?.firstOrNull()
+                    ?.text
+
+                return@withContext textoRespuesta ?: "No se recibió respuesta del modelo."
+            } else {
+                return@withContext "Error: ${response.code()} ${response.errorBody()?.string()}"
+            }
+        } catch (e: Exception) {
+            return@withContext "Error al conectarse con Gemini: ${e.localizedMessage}"
+        }
     }
 }
