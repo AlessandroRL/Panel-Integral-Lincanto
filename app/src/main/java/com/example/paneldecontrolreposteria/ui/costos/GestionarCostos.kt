@@ -165,44 +165,44 @@ fun GestionarCostos(
         }
     }
 
-        if (mostrarDialogoPlantilla) {
-            DialogSeleccionarPlantillaProducto(
-                onDismiss = { mostrarDialogoPlantilla = false },
-                onSeleccionar = {
-                    productoEditando = it
-                    mostrarDialogoEditar = true
-                    mostrarDialogoPlantilla = false
+    if (mostrarDialogoPlantilla) {
+        DialogSeleccionarPlantillaProducto(
+            onDismiss = { mostrarDialogoPlantilla = false },
+            onSeleccionar = {
+                productoEditando = it
+                mostrarDialogoEditar = true
+                mostrarDialogoPlantilla = false
+            },
+            viewModel = viewModel
+        )
+    }
+
+    productoEditando?.let { producto ->
+        if (mostrarDialogoEditar) {
+            DialogEditarProductoCostos(
+                productoOriginal = producto,
+                onDismiss = {
+                    mostrarDialogoEditar = false
+                    productoEditando = null
+                },
+                onGuardar = { actualizado ->
+                    if (productosCosto.any { it.nombre == actualizado.nombre }) {
+                        viewModel.actualizarProductoCosto(actualizado)
+                    } else {
+                        viewModel.guardarProductoCosto(actualizado)
+                    }
+                    mostrarDialogoEditar = false
+                    productoEditando = null
                 },
                 viewModel = viewModel
             )
         }
-
-        productoEditando?.let { producto ->
-            if (mostrarDialogoEditar) {
-                DialogEditarProductoCostos(
-                    productoOriginal = producto,
-                    onDismiss = {
-                        mostrarDialogoEditar = false
-                        productoEditando = null
-                    },
-                    onGuardar = { actualizado ->
-                        if (productosCosto.any { it.nombre == actualizado.nombre }) {
-                            viewModel.actualizarProductoCosto(actualizado)
-                        } else {
-                            viewModel.guardarProductoCosto(actualizado)
-                        }
-                        mostrarDialogoEditar = false
-                        productoEditando = null
-                    },
-                    viewModel = viewModel
-                )
-            }
-        }
-
-        productoSeleccionado?.let {
-            DialogDetalleProductoCosto(
-                producto = it,
-                onDismiss = { productoSeleccionado = null }
-            )
-        }
     }
+
+    productoSeleccionado?.let {
+        DialogDetalleProductoCosto(
+            producto = it,
+            onDismiss = { productoSeleccionado = null }
+        )
+    }
+}

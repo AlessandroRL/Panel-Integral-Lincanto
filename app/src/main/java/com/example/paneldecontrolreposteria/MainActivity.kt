@@ -119,18 +119,18 @@ fun MainApp(
     navController: NavHostController,
     speechRecognizerManager: SpeechRecognizerManager
 )
- {
+{
     val items = listOf("Pedidos", "Gestion", "Asistente")
     val routes = listOf("gestionPedidos", "gestionIngredientes", "asistenteVirtual")
-     val geminiViewModel: GeminiViewModel = viewModel()
-     val pedidoViewModel: PedidoViewModel = viewModel()
-     val ingredienteViewModel: IngredienteViewModel = viewModel()
-     val productoViewModel: ProductoViewModel = viewModel()
-     val productoCostoViewModel: ProductoCostoViewModel = viewModel()
+    val geminiViewModel: GeminiViewModel = viewModel()
+    val pedidoViewModel: PedidoViewModel = viewModel()
+    val ingredienteViewModel: IngredienteViewModel = viewModel()
+    val productoViewModel: ProductoViewModel = viewModel()
+    val productoCostoViewModel: ProductoCostoViewModel = viewModel()
 
 
 
-     Scaffold(
+    Scaffold(
         bottomBar = {
             NavigationBar {
                 items.forEachIndexed { index, item ->
