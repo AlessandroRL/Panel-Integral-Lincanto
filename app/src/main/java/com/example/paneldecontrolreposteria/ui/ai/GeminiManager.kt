@@ -225,10 +225,24 @@ class GeminiManager {
         FORMATO DEL JSON SEGÚN TIPO DE CONSULTA:
 
         - Para consultar pedidos:
-        {
-          "intencion": "consultar_pedidos",
-          "rango": "semana" // puede ser "hoy", "mañana", "semana", "mes" o "todos"
-        }
+       {
+       "intencion": "consultar_pedidos",
+       "rango": "hoy" | "mañana" | "semana" | "proxima_semana" | "mes" | "mes_nombre" | "todos",
+       "mes": "julio",
+       "anio": 2025
+       }
+
+       INTERPRETACIÓN DEL RANGO:
+       - Si el usuario pregunta por "hoy", "esta mañana", "para hoy", etc. → usar "hoy".
+       - Si menciona explícitamente "mañana", usar "mañana".
+       - Si dice "esta semana", "qué pedidos tengo esta semana", o días dentro de la semana actual → usar "semana".
+       - Si el usuario dice "esta semana", usar "semana"
+       - Si dice "la próxima semana", "la semana que viene", "semana siguiente", usar "proxima_semana"
+       - Si menciona "este mes", "en junio", "qué hay en este mes", etc. → usar "mes".
+       - Si el usuario dice "el mes de julio", usar: "rango": "mes_nombre", "mes": "julio" (Usar misma logica para otros meses)
+       - Si dice "este mes", usar: "rango": "mes"
+       - Si no especifica mes, omitir el campo "mes"
+       - Si no se especifica fecha → usar "todos".
 
         - Para saber si un ingrediente existe:
         {

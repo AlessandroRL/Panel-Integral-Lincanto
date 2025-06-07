@@ -2,6 +2,7 @@ package com.example.paneldecontrolreposteria.ui.ai
 
 import com.example.paneldecontrolreposteria.model.IngredienteDetalle
 import com.example.paneldecontrolreposteria.model.ProductoPedido
+import java.time.LocalDate
 
 sealed class Comando {
     data class AgregarPedido(val cliente: String, val productos: List<ProductoPedido>, val fechaLimite: String) : Comando()
@@ -36,7 +37,11 @@ sealed class Comando {
     ) : Comando()
     data class EliminarProducto(val nombre: String) : Comando()
 
-    data class ConsultarPedidos(val tipo: String) : Comando()
+    data class ConsultarPedidos(
+        val tipo: String,
+        val mesNombre: String = "",
+        val anio: Int = LocalDate.now().year
+    ) : Comando()
     data class ConsultarIngredientesTotales(val dummy: Boolean = true) : Comando()
     data class ConsultarSiIngredienteExiste(val nombre: String) : Comando()
     data class ConsultarListaIngredientes(val dummy: Boolean = true) : Comando()

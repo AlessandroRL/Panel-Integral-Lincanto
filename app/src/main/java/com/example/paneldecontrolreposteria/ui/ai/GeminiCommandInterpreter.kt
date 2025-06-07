@@ -14,6 +14,8 @@ import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
 import org.json.JSONObject
 import org.apache.commons.text.similarity.LevenshteinDistance
 import java.time.LocalDate
+import java.time.Month
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
 
 @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
@@ -221,7 +223,10 @@ class GeminiCommandInterpreter(
         return when (intencion) {
             "consultar_pedidos" -> {
                 val rango = json.optString("rango", "todos")
-                Comando.ConsultarPedidos(rango)
+                val mesNombre = json.optString("mes", "")
+                val anio = json.optInt("anio", LocalDate.now().year)
+
+                Comando.ConsultarPedidos(rango, mesNombre, anio)
             }
 
             "consultar_ingredientes" -> {
@@ -556,22 +561,54 @@ class GeminiCommandInterpreter(
                 val pedidos = pedidoViewModel.pedidos.value
                 val tipo = comando.tipo
                 val hoy = LocalDate.now()
+                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-                val filtrados = when (tipo) {
-                    "hoy" -> pedidos.filter {
-                        LocalDate.parse(it.fechaLimite) == hoy
+                val filtrados = pedidos.filter { pedido ->
+                    try {
+                        val fecha = LocalDate.parse(pedido.fechaLimite, formatter)
+                        when (tipo) {
+                            "hoy" -> fecha == hoy
+                            "mañana" -> {
+                                fecha == hoy.plusDays(1)
+                            }
+                            "semana" -> {
+                                val semanaHoy = hoy.get(ChronoField.ALIGNED_WEEK_OF_YEAR)
+                                val semanaPedido = fecha.get(ChronoField.ALIGNED_WEEK_OF_YEAR)
+                                semanaHoy == semanaPedido && hoy.year == fecha.year
+                            }
+                            "proxima_semana" -> {
+                                val semanaHoy = hoy.get(ChronoField.ALIGNED_WEEK_OF_YEAR)
+                                val semanaPedido = fecha.get(ChronoField.ALIGNED_WEEK_OF_YEAR)
+                                semanaPedido == semanaHoy + 1 && hoy.year == fecha.year
+                            }
+                            "mes" -> fecha.month == hoy.month && fecha.year == hoy.year
+                            "mes_nombre" -> {
+                                val mesInput = comando.mesNombre.lowercase().replace("é", "e")
+                                val mesesMap = mapOf(
+                                    "enero" to Month.JANUARY,
+                                    "febrero" to Month.FEBRUARY,
+                                    "marzo" to Month.MARCH,
+                                    "abril" to Month.APRIL,
+                                    "mayo" to Month.MAY,
+                                    "junio" to Month.JUNE,
+                                    "julio" to Month.JULY,
+                                    "agosto" to Month.AUGUST,
+                                    "septiembre" to Month.SEPTEMBER,
+                                    "octubre" to Month.OCTOBER,
+                                    "noviembre" to Month.NOVEMBER,
+                                    "diciembre" to Month.DECEMBER
+                                )
+
+                                val mesBuscado = mesesMap[mesInput]
+                                val anioBuscado = comando.anio
+                                mesBuscado != null && fecha.month == mesBuscado && fecha.year == anioBuscado
+                            }
+                            "todos" -> true
+                            else -> false
+                        }
+                    } catch (_: Exception) {
+                        false
                     }
-                    "semana" -> pedidos.filter {
-                        val fecha = LocalDate.parse(it.fechaLimite)
-                        val semanaHoy = hoy.get(ChronoField.ALIGNED_WEEK_OF_YEAR)
-                        val semanaPedido = fecha.get(ChronoField.ALIGNED_WEEK_OF_YEAR)
-                        semanaHoy == semanaPedido && hoy.year == fecha.year
-                    }
-                    "mes" -> pedidos.filter {
-                        val fecha = LocalDate.parse(it.fechaLimite)
-                        fecha.month == hoy.month && fecha.year == hoy.year
-                    }
-                    else -> emptyList()
                 }
 
                 return if (filtrados.isEmpty()) {
