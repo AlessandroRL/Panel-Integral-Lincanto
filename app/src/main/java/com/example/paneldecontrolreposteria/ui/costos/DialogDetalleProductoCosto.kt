@@ -31,7 +31,7 @@ fun DialogDetalleProductoCosto(
                         Text("Costo unitario: $${String.format("%.2f", ingrediente.costoUnidad)}")
                         Text("Costo total: $${String.format("%.2f", ingrediente.costoTotal)}")
                     }
-                    Divider(modifier = Modifier.padding(vertical = 4.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Costo total estimado: $${String.format("%.2f", producto.costoTotal)}")

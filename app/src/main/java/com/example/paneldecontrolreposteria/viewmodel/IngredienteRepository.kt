@@ -26,12 +26,6 @@ class IngredienteRepository {
         collection.document(ingrediente.nombre).set(ingrediente).await()
     }
 
-    suspend fun actualizarIngrediente(ingrediente: Ingrediente) {
-        if (ingrediente.id.isNotBlank()) {
-            collection.document(ingrediente.id).set(ingrediente).await()
-        }
-    }
-
     suspend fun eliminarIngrediente(id: String) {
         collection.document(id).delete().await()
     }

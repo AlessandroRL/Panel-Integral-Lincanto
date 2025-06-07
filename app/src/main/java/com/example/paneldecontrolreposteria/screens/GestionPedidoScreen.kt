@@ -20,41 +20,40 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.example.paneldecontrolreposteria.model.Pedido
 import com.example.paneldecontrolreposteria.ui.asistente.AsistenteButtonFloating
-import com.example.paneldecontrolreposteria.ui.asistente.voice.SpeechRecognizerManager
 import android.Manifest
+import androidx.compose.material3.HorizontalDivider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewModel, speechRecognizerManager: SpeechRecognizerManager) {
+fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewModel) {
     val pedidos by viewModel.pedidos.collectAsState()
     val scope = rememberCoroutineScope()
 
     var pedidoAEliminar by remember { mutableStateOf<Pedido?>(null) }
     var mostrarDialogo by remember { mutableStateOf(false) }
 
-    var filtroEstado by remember { mutableStateOf("Todos") }
-    var ordenFecha by remember { mutableStateOf("Ninguno") }
+    val context = LocalContext.current
 
     var filtroMenuExpandido by remember { mutableStateOf(false) }
-    var ordenMenuExpandido by remember { mutableStateOf(false) }
+    val filtrosSeleccionados = remember { mutableStateListOf<String>() }
+    var ordenFecha by remember { mutableStateOf("Ninguno") }
+    var ordenAscendente by remember { mutableStateOf(true) }
 
     val pedidosFiltrados = pedidos
         .filter {
-            when (filtroEstado) {
-                "Pendiente" -> it.estado == "Pendiente"
-                "Listo para entrega" -> it.estado == "Listo para entrega"
-                else -> true
+            if (filtrosSeleccionados.isEmpty() || "Todos" in filtrosSeleccionados) {
+                true
+            } else {
+                it.estado in filtrosSeleccionados
             }
         }
         .let {
             when (ordenFecha) {
-                "Fecha de registro" -> it.sortedByDescending { pedido -> pedido.fechaRegistro }
-                "Fecha límite" -> it.sortedByDescending { pedido -> pedido.fechaLimite }
+                "Fecha de registro" -> if (ordenAscendente) it.sortedBy { pedido -> pedido.fechaRegistro } else it.sortedByDescending { pedido -> pedido.fechaRegistro }
+                "Fecha límite" -> if (ordenAscendente) it.sortedBy { pedido -> pedido.fechaLimite } else it.sortedByDescending { pedido -> pedido.fechaLimite }
                 else -> it
             }
         }
-
-    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -63,7 +62,7 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                 actions = {
                     Box {
                         IconButton(onClick = { filtroMenuExpandido = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Filtrar por estado")
+                            Icon(Icons.Default.FilterList, contentDescription = "Filtrar")
                         }
                         DropdownMenu(
                             expanded = filtroMenuExpandido,
@@ -77,29 +76,36 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(estado)
-                                            if (filtroEstado == estado) {
+                                            if (estado in filtrosSeleccionados) {
                                                 Spacer(modifier = Modifier.width(8.dp))
                                                 Icon(Icons.Default.Check, contentDescription = "Seleccionado")
                                             }
                                         }
                                     },
                                     onClick = {
-                                        filtroEstado = estado
+                                        if (estado == "Todos") {
+                                            filtrosSeleccionados.clear()
+                                            filtrosSeleccionados.add("Todos")
+                                        } else {
+                                            if ("Todos" in filtrosSeleccionados) {
+                                                filtrosSeleccionados.remove("Todos")
+                                            }
+                                            if (estado == "Pendiente" && "Listo para entrega" in filtrosSeleccionados) {
+                                                filtrosSeleccionados.remove("Listo para entrega")
+                                            } else if (estado == "Listo para entrega" && "Pendiente" in filtrosSeleccionados) {
+                                                filtrosSeleccionados.remove("Pendiente")
+                                            }
+                                            if (estado in filtrosSeleccionados) {
+                                                filtrosSeleccionados.remove(estado)
+                                            } else {
+                                                filtrosSeleccionados.add(estado)
+                                            }
+                                        }
                                         filtroMenuExpandido = false
                                     }
                                 )
                             }
-                        }
-                    }
-
-                    Box {
-                        IconButton(onClick = { ordenMenuExpandido = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Ordenar por fecha")
-                        }
-                        DropdownMenu(
-                            expanded = ordenMenuExpandido,
-                            onDismissRequest = { ordenMenuExpandido = false }
-                        ) {
+                            HorizontalDivider(modifier = Modifier.fillMaxWidth())
                             listOf("Ninguno", "Fecha de registro", "Fecha límite").forEach { orden ->
                                 DropdownMenuItem(
                                     text = {
@@ -107,7 +113,7 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                                             horizontalArrangement = Arrangement.Start,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(orden)
+                                            Text("$orden${if (orden != "Ninguno") " (${if (ordenAscendente) "Ascendente" else "Descendente"})" else ""}")
                                             if (ordenFecha == orden) {
                                                 Spacer(modifier = Modifier.width(8.dp))
                                                 Icon(Icons.Default.Check, contentDescription = "Seleccionado")
@@ -115,8 +121,17 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                                         }
                                     },
                                     onClick = {
-                                        ordenFecha = orden
-                                        ordenMenuExpandido = false
+                                        if (orden == "Ninguno") {
+                                            ordenFecha = "Ninguno"
+                                        } else {
+                                            if (ordenFecha == orden) {
+                                                ordenAscendente = !ordenAscendente
+                                            } else {
+                                                ordenFecha = orden
+                                                ordenAscendente = true
+                                            }
+                                        }
+                                        filtroMenuExpandido = false
                                     }
                                 )
                             }

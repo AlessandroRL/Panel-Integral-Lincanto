@@ -43,11 +43,11 @@ class GeminiManager {
                 construirPromptParaConsultaInformativa(instruccion)
             }
 
-            Regex("ingrediente[s]?", RegexOption.IGNORE_CASE).containsMatchIn(instruccion) -> {
+            Regex("ingredientes?", RegexOption.IGNORE_CASE).containsMatchIn(instruccion) -> {
                 construirPromptParaIngrediente(instruccion)
             }
 
-            Regex("producto[s]?", RegexOption.IGNORE_CASE).containsMatchIn(instruccion) -> {
+            Regex("productos?", RegexOption.IGNORE_CASE).containsMatchIn(instruccion) -> {
                 construirPromptParaProducto(instruccion)
             }
 

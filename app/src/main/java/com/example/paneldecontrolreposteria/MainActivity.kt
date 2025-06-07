@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -24,8 +25,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.paneldecontrolreposteria.screens.AgregarPedidoScreen
@@ -56,54 +55,27 @@ class MainActivity : ComponentActivity() {
             false
         }
 
+        val requestPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            if (isGranted) {
+                Log.d("Permissions", "Permiso de grabación concedido")
+            } else {
+                Log.e("Permissions", "Permiso de grabación denegado")
+            }
+        }
+
         if (ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.RECORD_AUDIO
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.RECORD_AUDIO),
-                1
-            )
+            requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
 
         setContent {
-            val recognizedText = remember { mutableStateOf("") }
-            val context = this
             val navController = rememberNavController()
-            val speechRecognizerManager = remember {
-                SpeechRecognizerManager(
-                    context = context,
-                    onResult = { result ->
-                        if (result.isNotBlank()) {
-                            recognizedText.value = result
-                        } else {
-                            recognizedText.value = "No se reconoció ningún comando."
-                        }
-                        navController.navigate("asistenteVirtual")
-                    }
-                    ,
-                    onError = { error ->
-                        Log.e("SpeechRecognizer", "Error: $error")
-                    }
-                )
-            }
-            MainApp(navController, speechRecognizerManager)
-        }
-    }
-
-    @Deprecated("This method has been deprecated in favor of using the Activity Result API\n      which brings increased type safety via an {@link ActivityResultContract} and the prebuilt\n      contracts for common intents available in\n      {@link androidx.activity.result.contract.ActivityResultContracts}, provides hooks for\n      testing, and allow receiving results in separate, testable classes independent from your\n      activity. Use\n      {@link #registerForActivityResult(ActivityResultContract, ActivityResultCallback)} passing\n      in a {@link RequestMultiplePermissions} object for the {@link ActivityResultContract} and\n      handling the result in the {@link ActivityResultCallback#onActivityResult(Object) callback}.")
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 1 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            Log.d("Permissions", "Permiso de grabación concedido")
-        } else {
-            Log.e("Permissions", "Permiso de grabación denegado")
+            MainApp(navController)
         }
     }
 }
@@ -111,19 +83,13 @@ class MainActivity : ComponentActivity() {
 @SuppressLint("StateFlowValueCalledInComposition")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MainApp(
-    navController: NavHostController,
-    speechRecognizerManager: SpeechRecognizerManager
-)
-{
+fun MainApp(navController: NavHostController) {
     val items = listOf("Pedidos", "Gestion", "Asistente")
     val routes = listOf("gestionPedidos", "gestionIngredientes", "asistenteVirtual")
     val geminiViewModel: GeminiViewModel = viewModel()
     val pedidoViewModel: PedidoViewModel = viewModel()
     val ingredienteViewModel: IngredienteViewModel = viewModel()
     val productoViewModel: ProductoViewModel = viewModel()
-
-
 
     Scaffold(
         bottomBar = {
@@ -156,8 +122,7 @@ fun MainApp(
             composable("gestionPedidos") {
                 GestionPedidoScreen(
                     navController = navController,
-                    viewModel = pedidoViewModel,
-                    speechRecognizerManager = speechRecognizerManager
+                    viewModel = pedidoViewModel
                 )
             }
             composable("agregarPedido") {

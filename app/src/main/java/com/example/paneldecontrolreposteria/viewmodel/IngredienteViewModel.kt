@@ -1,7 +1,5 @@
 package com.example.paneldecontrolreposteria.viewmodel
 
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.paneldecontrolreposteria.model.Ingrediente

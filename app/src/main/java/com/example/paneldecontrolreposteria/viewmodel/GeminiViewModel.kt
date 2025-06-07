@@ -31,11 +31,6 @@ class GeminiViewModel : ViewModel() {
     private val _mensajes = MutableLiveData<List<MensajeAsistente>>(emptyList())
     val mensajes: LiveData<List<MensajeAsistente>> = _mensajes
 
-    private fun agregarMensaje(contenido: String, emisor: Emisor) {
-        val nuevos = _mensajes.value.orEmpty() + MensajeAsistente(emisor, contenido)
-        _mensajes.value = nuevos
-    }
-
     private fun formatearRespuestaLegible(respuesta: String): String {
         val inicio = respuesta.indexOf("{")
         val fin = respuesta.lastIndexOf("}")
@@ -49,7 +44,6 @@ class GeminiViewModel : ViewModel() {
                         val valorFormateado = when (valor) {
                             is JSONArray -> {
                                 if (valor.length() > 0 && valor.get(0) is JSONObject) {
-                                    // Lista de objetos
                                     (0 until valor.length()).joinToString("\n") { i ->
                                         val obj = valor.getJSONObject(i)
                                         val detalles = obj.keys().asSequence().joinToString("\n") { k ->
@@ -58,7 +52,6 @@ class GeminiViewModel : ViewModel() {
                                         "•\n$detalles"
                                     }
                                 } else {
-                                    // Lista simple
                                     (0 until valor.length()).joinToString("\n") { i -> "• ${valor.get(i)}" }
                                 }
                             }
