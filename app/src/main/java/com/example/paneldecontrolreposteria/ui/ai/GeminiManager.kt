@@ -243,6 +243,12 @@ class GeminiManager {
        - Si dice "este mes", usar: "rango": "mes"
        - Si no especifica mes, omitir el campo "mes"
        - Si no se especifica fecha → usar "todos".
+       
+       - Para consultar la informacion de un pedido:
+       {
+         "intencion": "consultar_pedido_cliente",
+         "cliente": "Ana"
+       }
 
         - Para saber si un ingrediente existe:
         {

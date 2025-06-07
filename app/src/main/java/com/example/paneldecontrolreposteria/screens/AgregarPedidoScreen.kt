@@ -14,7 +14,11 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.DropdownMenuItem
 import android.app.DatePickerDialog
+import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.example.paneldecontrolreposteria.model.ProductoPedido
 import java.util.*
@@ -41,6 +45,8 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
     var cantidadActual by remember { mutableStateOf("") }
     var tamanoActual by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
+    var productoAEliminar by remember { mutableStateOf<ProductoSeleccionado?>(null) }
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.obtenerNombresProductos { productos ->
@@ -132,9 +138,41 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
 
             if (productosSeleccionados.isNotEmpty()) {
                 Text("Productos Agregados:", style = MaterialTheme.typography.titleMedium)
-                productosSeleccionados.forEach {
-                    Text("- ${it.nombre} (${it.cantidad} u, ${it.tamano} personas)")
+                productosSeleccionados.forEach { producto ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("- ${producto.nombre} (${producto.cantidad} u, ${producto.tamano} personas)")
+                        IconButton(onClick = { productoAEliminar = producto }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Eliminar Producto", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
                 }
+            }
+
+            if (productoAEliminar != null) {
+                AlertDialog(
+                    onDismissRequest = { productoAEliminar = null },
+                    title = { Text("Eliminar Producto") },
+                    text = { Text("¿Estás seguro de que quieres eliminar este producto?") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                productosSeleccionados.remove(productoAEliminar)
+                                productoAEliminar = null
+                                Toast.makeText(context, "Producto eliminado", Toast.LENGTH_SHORT).show()
+                            }
+                        ) {
+                            Text("Eliminar", color = Color.Red)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { productoAEliminar = null }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -201,6 +239,7 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
                                 fechaLimite = fechaLimite
                             )
                             viewModel.agregarPedido(nuevoPedido)
+                            Toast.makeText(context, "Pedido agregado", Toast.LENGTH_SHORT).show()
                             onPedidoAgregado()
                         } catch (e: Exception) {
                             errorMensaje = "Error al agregar pedido: ${e.message}"

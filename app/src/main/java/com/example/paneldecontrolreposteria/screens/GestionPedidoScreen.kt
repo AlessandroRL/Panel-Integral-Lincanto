@@ -185,26 +185,31 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                         Text("Fecha de Registro: ${pedido.fechaRegistro}")
                         Text("Fecha Límite: ${pedido.fechaLimite}")
 
-                        var botonDeshabilitado by remember { mutableStateOf(pedido.estado == "Listo para entrega") }
-
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Button(
                                 onClick = {
-                                    botonDeshabilitado = true
                                     scope.launch {
+                                        val nuevoEstado = if (pedido.estado == "Listo para entrega") "Pendiente" else "Listo para entrega"
                                         viewModel.editarPedido(
-                                            pedido.copy(estado = "Listo para entrega")
+                                            pedido.copy(estado = nuevoEstado)
                                         ) { result ->
-                                            if (!result) botonDeshabilitado = false
+                                            if (result) {
+                                                Toast.makeText(context, "Pedido actualizado", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                Toast.makeText(context, "Error al actualizar el pedido", Toast.LENGTH_SHORT).show()
+                                            }
                                         }
                                     }
                                 },
-                                enabled = !botonDeshabilitado
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (pedido.estado == "Listo para entrega") Color.Gray else MaterialTheme.colorScheme.primary,
+                                    contentColor = if (pedido.estado == "Listo para entrega") Color.LightGray else MaterialTheme.colorScheme.onPrimary
+                                )
                             ) {
-                                Text(if (botonDeshabilitado) "Listo para entrega" else "Marcar como Entregado")
+                                Text(if (pedido.estado == "Listo para entrega") "Revertir estado" else "Marcar como Entregado")
                             }
                             Button(
                                 onClick = {
@@ -236,6 +241,7 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                     onClick = {
                         scope.launch {
                             viewModel.eliminarPedido(pedidoAEliminar!!.id)
+                            Toast.makeText(context, "Pedido eliminado", Toast.LENGTH_SHORT).show()
                             mostrarDialogo = false
                         }
                     }

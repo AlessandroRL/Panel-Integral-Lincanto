@@ -229,6 +229,11 @@ class GeminiCommandInterpreter(
                 Comando.ConsultarPedidos(rango, mesNombre, anio)
             }
 
+            "consultar_pedido_cliente" -> {
+                val cliente = json.optString("cliente", "")
+                Comando.ConsultarPedidoPorCliente(cliente)
+            }
+
             "consultar_ingredientes" -> {
                 when {
                     json.has("nombreIngrediente") -> {
@@ -621,6 +626,23 @@ class GeminiCommandInterpreter(
                                 }
                                 "- ${pedido.cliente}: ${pedido.fechaLimite}\n$productosTexto"
                             }
+                }
+            }
+
+            is Comando.ConsultarPedidoPorCliente -> {
+                val clienteBuscado = comando.cliente.lowercase().trim()
+                val pedido = pedidoViewModel.pedidos.value.find {
+                    it.cliente.lowercase().contains(clienteBuscado)
+                }
+
+                return if (pedido != null) {
+                    val productosTexto = pedido.productos.joinToString("\n") { prod ->
+                        "    - ${prod.nombre} (${prod.tamano}), Cantidad: ${prod.cantidad}"
+                    }
+
+                    "Pedido de ${pedido.cliente}:\n\nEstado: ${pedido.estado}\n\nFecha límite: ${pedido.fechaLimite}\n\nProductos:\n$productosTexto"
+                } else {
+                    "No se encontró ningún pedido del cliente '$clienteBuscado'."
                 }
             }
 

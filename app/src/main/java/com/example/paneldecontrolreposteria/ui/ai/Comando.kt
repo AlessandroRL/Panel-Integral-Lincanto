@@ -42,6 +42,7 @@ sealed class Comando {
         val mesNombre: String = "",
         val anio: Int = LocalDate.now().year
     ) : Comando()
+    data class ConsultarPedidoPorCliente(val cliente: String) : Comando()
     data class ConsultarIngredientesTotales(val dummy: Boolean = true) : Comando()
     data class ConsultarSiIngredienteExiste(val nombre: String) : Comando()
     data class ConsultarListaIngredientes(val dummy: Boolean = true) : Comando()

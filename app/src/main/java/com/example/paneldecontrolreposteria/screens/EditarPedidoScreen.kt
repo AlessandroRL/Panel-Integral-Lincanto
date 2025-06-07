@@ -1,6 +1,7 @@
 package com.example.paneldecontrolreposteria.screens
 
 import android.annotation.SuppressLint
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.paneldecontrolreposteria.model.Pedido
@@ -33,6 +35,7 @@ fun EditarPedidoScreen(
 
     val productos = remember { mutableStateListOf<ProductoPedido>().apply { addAll(pedido.productos) } }
     var productosDisponibles by remember { mutableStateOf<List<String>>(emptyList()) }
+    var productoAEliminar by remember { mutableStateOf<ProductoPedido?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.obtenerNombresProductos { productos ->
@@ -142,11 +145,35 @@ fun EditarPedidoScreen(
                 )
 
                 IconButton(
-                    onClick = { productos.removeAt(index) },
+                    onClick = { productoAEliminar = producto },
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = "Eliminar Producto", tint = MaterialTheme.colorScheme.error)
                 }
+            }
+
+            if (productoAEliminar != null) {
+                AlertDialog(
+                    onDismissRequest = { productoAEliminar = null },
+                    title = { Text("Eliminar Producto") },
+                    text = { Text("¿Estás seguro de que quieres eliminar este producto?") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                productos.remove(productoAEliminar)
+                                productoAEliminar = null
+                                Toast.makeText(context, "Producto eliminado", Toast.LENGTH_SHORT).show()
+                            }
+                        ) {
+                            Text("Eliminar", color = Color.Red)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { productoAEliminar = null }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
             }
 
             Button(
@@ -180,6 +207,7 @@ fun EditarPedidoScreen(
                     scope.launch {
                         viewModel.editarPedido(pedidoActualizado) { success ->
                             if (success) {
+                                Toast.makeText(context, "Pedido editado", Toast.LENGTH_SHORT).show()
                                 onPedidoEditado()
                             } else {
                                 errorMensaje = "Error al editar el pedido."
