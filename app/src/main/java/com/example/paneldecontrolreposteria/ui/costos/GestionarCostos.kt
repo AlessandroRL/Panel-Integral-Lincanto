@@ -22,16 +22,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.paneldecontrolreposteria.model.ProductoCosto
 import com.example.paneldecontrolreposteria.ui.asistente.AsistenteButtonFloating
-import com.example.paneldecontrolreposteria.ui.asistente.voice.SpeechRecognizerManager
 import com.example.paneldecontrolreposteria.viewmodel.ProductoCostoViewModel
 
 @SuppressLint("DefaultLocale")
 @Composable
 fun GestionarCostos(
     viewModel: ProductoCostoViewModel = viewModel(),
-    speechRecognizerManager: SpeechRecognizerManager,
+    navController: NavController,
     context: Context
 ) {
     var mostrarDialogoPlantilla by remember { mutableStateOf(false) }
@@ -153,14 +153,14 @@ fun GestionarCostos(
                         ) == PackageManager.PERMISSION_GRANTED
                     ) {
                         Toast.makeText(context, "🎤 Escuchando...", Toast.LENGTH_SHORT).show()
-                        speechRecognizerManager.startListening()
+                        navController.navigate("asistenteVirtual?activarEscuchaInicial=true")
                     } else {
                         Toast.makeText(context, "Permiso de grabación no concedido", Toast.LENGTH_SHORT).show()
                     }
                 },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 80.dp) // Ajustar posición
+                    .padding(end = 16.dp, bottom = 80.dp)
             )
         }
     }

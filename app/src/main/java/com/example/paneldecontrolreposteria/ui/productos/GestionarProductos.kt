@@ -28,10 +28,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.paneldecontrolreposteria.model.IngredienteDetalle
 import com.example.paneldecontrolreposteria.model.Producto
 import com.example.paneldecontrolreposteria.ui.asistente.AsistenteButtonFloating
-import com.example.paneldecontrolreposteria.ui.asistente.voice.SpeechRecognizerManager
 import com.example.paneldecontrolreposteria.ui.components.BusquedaIngredientesConLista
 import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
@@ -41,7 +41,7 @@ import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
 @Composable
 fun GestionarProductos(
     viewModel: ProductoViewModel,
-    speechRecognizerManager: SpeechRecognizerManager,
+    navController: NavController,
     context: Context
 ) {
     var showDialog by remember { mutableStateOf(false) }
@@ -82,7 +82,7 @@ fun GestionarProductos(
                             ) == PackageManager.PERMISSION_GRANTED
                         ) {
                             Toast.makeText(context, "🎤 Escuchando...", Toast.LENGTH_SHORT).show()
-                            speechRecognizerManager.startListening()
+                            navController.navigate("asistenteVirtual?activarEscuchaInicial=true")
                         } else {
                             Toast.makeText(context, "Permiso de grabación no concedido", Toast.LENGTH_SHORT).show()
                         }

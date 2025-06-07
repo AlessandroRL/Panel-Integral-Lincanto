@@ -34,7 +34,8 @@ import java.util.Locale
 fun AsistenteScreen(
     geminiViewModel: GeminiViewModel,
     controller: AsistenteController,
-    speechRecognizerManager: SpeechRecognizerManager
+    speechRecognizerManager: SpeechRecognizerManager,
+    activarEscuchaInicial: Boolean = false
 ) {
     val contexto = LocalContext.current
     var instruccion by remember { mutableStateOf("") }
@@ -44,6 +45,13 @@ fun AsistenteScreen(
 
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
     var ttsDisponible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(activarEscuchaInicial) {
+        if (activarEscuchaInicial) {
+            isListening = true
+            speechRecognizerManager.startListening()
+        }
+    }
 
     DisposableEffect(Unit) {
         val ttsLocal = TextToSpeech(contexto) { status ->

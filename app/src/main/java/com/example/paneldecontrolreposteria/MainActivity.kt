@@ -37,10 +37,11 @@ import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import com.example.paneldecontrolreposteria.viewmodel.PedidoViewModel
 import kotlin.io.encoding.ExperimentalEncodingApi
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.example.paneldecontrolreposteria.ui.asistente.AsistenteController
 import com.example.paneldecontrolreposteria.ui.ai.GeminiCommandInterpreter
 import com.example.paneldecontrolreposteria.viewmodel.GeminiViewModel
-import com.example.paneldecontrolreposteria.viewmodel.ProductoCostoViewModel
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
 
 class MainActivity : ComponentActivity() {
@@ -68,8 +69,6 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            val pedidoViewModel: PedidoViewModel = viewModel()
-            val ingredienteViewModel = remember { IngredienteViewModel() }
             val recognizedText = remember { mutableStateOf("") }
             val context = this
             val navController = rememberNavController()
@@ -90,7 +89,7 @@ class MainActivity : ComponentActivity() {
                     }
                 )
             }
-            MainApp(pedidoViewModel, ingredienteViewModel, navController, speechRecognizerManager)
+            MainApp(navController, speechRecognizerManager)
         }
     }
 
@@ -109,13 +108,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
 @SuppressLint("StateFlowValueCalledInComposition")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainApp(
-    pedidoViewModel: PedidoViewModel,
-    ingredienteViewModel: IngredienteViewModel,
     navController: NavHostController,
     speechRecognizerManager: SpeechRecognizerManager
 )
@@ -126,7 +122,6 @@ fun MainApp(
     val pedidoViewModel: PedidoViewModel = viewModel()
     val ingredienteViewModel: IngredienteViewModel = viewModel()
     val productoViewModel: ProductoViewModel = viewModel()
-    val productoCostoViewModel: ProductoCostoViewModel = viewModel()
 
 
 
@@ -183,15 +178,21 @@ fun MainApp(
                 }
             }
             composable("gestionIngredientes") {
-                GestionIngredientesScreen(speechRecognizerManager = speechRecognizerManager)
+                GestionIngredientesScreen(navController = navController)
             }
-            composable("asistenteVirtual") {
+            composable("asistenteVirtual?activarEscuchaInicial={activarEscuchaInicial}",
+                arguments = listOf(navArgument("activarEscuchaInicial") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                })
+            ) { backStackEntry ->
+                val activarEscuchaInicial = backStackEntry.arguments?.getBoolean("activarEscuchaInicial") == true
                 val context = LocalContext.current
+
                 val speechRecognizerManager = remember {
                     SpeechRecognizerManager(
                         context = context,
-                        onResult = { result ->
-                        },
+                        onResult = {},
                         onError = { error ->
                             Log.e("SpeechRecognizer", "Error: $error")
                         }
@@ -207,7 +208,8 @@ fun MainApp(
                             productoViewModel = productoViewModel,
                         ),
                     ),
-                    speechRecognizerManager = speechRecognizerManager
+                    speechRecognizerManager = speechRecognizerManager,
+                    activarEscuchaInicial = activarEscuchaInicial
                 )
             }
         }

@@ -22,9 +22,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.paneldecontrolreposteria.model.Ingrediente
 import com.example.paneldecontrolreposteria.ui.asistente.AsistenteButtonFloating
-import com.example.paneldecontrolreposteria.ui.asistente.voice.SpeechRecognizerManager
 import com.example.paneldecontrolreposteria.ui.costos.GestionarCostos
 import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import com.example.paneldecontrolreposteria.ui.productos.GestionarProductos
@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun GestionIngredientesScreen(speechRecognizerManager: SpeechRecognizerManager) {
+fun GestionIngredientesScreen(navController: NavController) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Ingredientes", "Productos", "Costos")
 
@@ -54,9 +54,9 @@ fun GestionIngredientesScreen(speechRecognizerManager: SpeechRecognizerManager) 
         }
 
         when (selectedTabIndex) {
-            0 -> GestionarIngredientes(speechRecognizerManager, context)
-            1 -> GestionarProductos(productoViewModel, speechRecognizerManager, context)
-            2 -> GestionarCostos(costoViewModel, speechRecognizerManager, context)
+            0 -> GestionarIngredientes(navController, context)
+            1 -> GestionarProductos(productoViewModel, navController, context)
+            2 -> GestionarCostos(costoViewModel, navController, context)
         }
     }
 }
@@ -64,7 +64,7 @@ fun GestionIngredientesScreen(speechRecognizerManager: SpeechRecognizerManager) 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GestionarIngredientes(
-    speechRecognizerManager: SpeechRecognizerManager,
+    navController: NavController,
     context: Context
 ) {
     val viewModel: IngredienteViewModel = viewModel()
@@ -166,7 +166,7 @@ fun GestionarIngredientes(
                         ) == PackageManager.PERMISSION_GRANTED
                     ) {
                         Toast.makeText(context, "🎤 Escuchando...", Toast.LENGTH_SHORT).show()
-                        speechRecognizerManager.startListening()
+                        navController.navigate("asistenteVirtual?activarEscuchaInicial=true")
                     } else {
                         Toast.makeText(context, "Permiso de grabación no concedido", Toast.LENGTH_SHORT).show()
                     }

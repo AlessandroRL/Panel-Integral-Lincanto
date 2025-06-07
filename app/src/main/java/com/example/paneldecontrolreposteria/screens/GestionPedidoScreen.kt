@@ -143,7 +143,8 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                             ) == PackageManager.PERMISSION_GRANTED
                         ) {
                             Toast.makeText(context, "🎤 Escuchando...", Toast.LENGTH_SHORT).show()
-                            speechRecognizerManager.startListening()
+                            navController.navigate("asistenteVirtual?activarEscuchaInicial=true")
+
                         } else {
                             Toast.makeText(context, "Permiso de grabación no concedido", Toast.LENGTH_SHORT).show()
                         }
@@ -179,7 +180,7 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                                 onClick = {
                                     botonDeshabilitado = true
                                     scope.launch {
-                                        val success = viewModel.editarPedido(
+                                        viewModel.editarPedido(
                                             pedido.copy(estado = "Listo para entrega")
                                         ) { result ->
                                             if (!result) botonDeshabilitado = false
