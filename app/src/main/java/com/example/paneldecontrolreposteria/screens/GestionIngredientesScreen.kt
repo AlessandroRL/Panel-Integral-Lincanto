@@ -81,6 +81,7 @@ fun GestionarIngredientes(
 
     var ingredienteAEditar by remember { mutableStateOf<Ingrediente?>(null) }
     var mostrarDialogoEdicion by remember { mutableStateOf(false) }
+    var ingredienteAEliminar by remember { mutableStateOf<Ingrediente?>(null) }
 
     Column(modifier = Modifier.padding(16.dp)) {
         Text("Registrar Ingrediente", style = MaterialTheme.typography.titleLarge)
@@ -149,9 +150,12 @@ fun GestionarIngredientes(
                             costoUnidad = costoUnidad.toDouble()
                         )
                         viewModel.agregarIngrediente(nuevo)
+                        Toast.makeText(context, "Ingrediente agregado", Toast.LENGTH_SHORT).show()
                         nombre = ""
                         unidad = ""
                         costoUnidad = ""
+                    } else {
+                        Toast.makeText(context, "Por favor, complete todos los campos", Toast.LENGTH_SHORT).show()
                     }
                 }
             ) {
@@ -219,9 +223,7 @@ fun GestionarIngredientes(
                                 Icon(Icons.Default.Edit, contentDescription = "Editar")
                             }
                             IconButton(onClick = {
-                                scope.launch {
-                                    viewModel.eliminarIngrediente(ingrediente.nombre)
-                                }
+                                ingredienteAEliminar = ingrediente
                             }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
                             }
@@ -230,6 +232,30 @@ fun GestionarIngredientes(
                 }
             }
         }
+    }
+
+    if (ingredienteAEliminar != null) {
+        AlertDialog(
+            onDismissRequest = { ingredienteAEliminar = null },
+            title = { Text("Eliminar Ingrediente") },
+            text = { Text("¿Estás seguro de que quieres eliminar este ingrediente?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    scope.launch {
+                        viewModel.eliminarIngrediente(ingredienteAEliminar!!.nombre)
+                        Toast.makeText(context, "Ingrediente eliminado", Toast.LENGTH_SHORT).show()
+                        ingredienteAEliminar = null
+                    }
+                }) {
+                    Text("Eliminar", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { ingredienteAEliminar = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 
     if (mostrarDialogoEdicion && ingredienteAEditar != null) {
@@ -282,6 +308,7 @@ fun GestionarIngredientes(
                         costoUnidad = nuevoCosto.toDoubleOrNull() ?: 0.0
                     )
                     viewModel.editarIngrediente(ingredienteEditado)
+                    Toast.makeText(context, "Ingrediente editado", Toast.LENGTH_SHORT).show()
                     mostrarDialogoEdicion = false
                 }) {
                     Text("Guardar")
