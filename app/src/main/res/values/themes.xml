@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.Lincanto.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#FFFFFF</item>
+        <item name="windowSplashScreenBackground">#201e1f</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/logo_recortado</item>
+        <item name="android:windowBackground">#201e1f</item>
         <item name="postSplashScreenTheme">@style/Theme.Lincanto.Splash</item>
     </style>
 </resources>

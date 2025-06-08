@@ -2,5 +2,7 @@
 <resources>
     <style name="Theme.PanelDeControlReposteria" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:forceDarkAllowed">false</item>
+        <item name="windowSplashScreenBackground">#201e1f</item>
+        <item name="android:windowBackground">#201e1f</item>
     </style>
 </resources>
