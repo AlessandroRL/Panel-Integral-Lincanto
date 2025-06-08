@@ -1,6 +1,7 @@
 package com.example.paneldecontrolreposteria.ui.costos
 
 import android.annotation.SuppressLint
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import com.example.paneldecontrolreposteria.model.IngredienteCosto
 
 @SuppressLint("MutableCollectionMutableState", "DefaultLocale")
@@ -34,7 +36,9 @@ fun DialogEditarProductoCostos(
         mutableStateMapOf<String, IngredienteCosto>().apply { putAll(productoOriginal.ingredientes) }
     }
     var mostrarAgregarIngrediente by remember { mutableStateOf(false) }
+    var ingredienteAEliminar by remember { mutableStateOf<Pair<String, IngredienteCosto>?>(null) }
     var mostrarEquivalencias by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     val costoTotal by remember {
         derivedStateOf {
@@ -130,7 +134,7 @@ fun DialogEditarProductoCostos(
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 4.dp)
                         )
-                        IconButton(onClick = { ingredientes.remove(id) }) {
+                        IconButton(onClick = { ingredienteAEliminar = id to ingrediente }) {
                             Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar")
                         }
                     }
@@ -151,6 +155,11 @@ fun DialogEditarProductoCostos(
                     costoTotal = costoTotal
                 )
                 onGuardar(productoEditado)
+                Toast.makeText(
+                    context,
+                    "Producto editado satisfactoriamente",
+                    Toast.LENGTH_SHORT
+                ).show()
                 onDismiss()
             }) {
                 Text("Guardar")
@@ -162,6 +171,27 @@ fun DialogEditarProductoCostos(
             }
         }
     )
+
+    ingredienteAEliminar?.let { (id, ingrediente) ->
+        AlertDialog(
+            onDismissRequest = { ingredienteAEliminar = null },
+            title = { Text("Eliminar Ingrediente") },
+            text = { Text("¿Estás seguro de que quieres eliminar el ingrediente \"${ingrediente.nombre}\"?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    ingredientes.remove(id)
+                    ingredienteAEliminar = null
+                }) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { ingredienteAEliminar = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     if (mostrarEquivalencias) {
         AlertDialog(

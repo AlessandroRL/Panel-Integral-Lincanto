@@ -38,6 +38,7 @@ fun GestionarCostos(
     var mostrarDialogoEditar by remember { mutableStateOf(false) }
     var productoEditando by remember { mutableStateOf<ProductoCosto?>(null) }
     var productoSeleccionado by remember { mutableStateOf<ProductoCosto?>(null) }
+    var productoAEliminar by remember { mutableStateOf<ProductoCosto?>(null) } // Estado para el producto a eliminar
 
     val productosCosto by viewModel.productosCosto.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
@@ -96,7 +97,7 @@ fun GestionarCostos(
                                         Icon(Icons.Default.Edit, contentDescription = "Editar")
                                     }
                                     IconButton(onClick = {
-                                        viewModel.eliminarProductoCosto(producto.nombre)
+                                        productoAEliminar = producto
                                     }) {
                                         Icon(Icons.Default.Delete, contentDescription = "Eliminar")
                                     }
@@ -163,6 +164,30 @@ fun GestionarCostos(
                     .padding(end = 16.dp, bottom = 80.dp)
             )
         }
+    }
+
+    productoAEliminar?.let { producto ->
+        AlertDialog(
+            onDismissRequest = { productoAEliminar = null },
+            title = { Text("Eliminar Producto") },
+            text = { Text("¿Estás seguro de que quieres eliminar el producto \"${producto.nombre}\"?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.eliminarProductoCosto(producto.nombre)
+                        Toast.makeText(context, "Producto eliminado", Toast.LENGTH_SHORT).show()
+                        productoAEliminar = null
+                    }
+                ) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { productoAEliminar = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 
     if (mostrarDialogoPlantilla) {
