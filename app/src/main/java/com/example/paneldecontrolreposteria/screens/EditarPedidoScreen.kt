@@ -74,7 +74,12 @@ fun EditarPedidoScreen(
                         val datePickerDialog = android.app.DatePickerDialog(
                             context,
                             { _, selectedYear, selectedMonth, selectedDay ->
-                                fechaLimite = String.format("%04d-%02d-%02d", selectedYear, selectedMonth + 1, selectedDay)
+                                fechaLimite = String.format(
+                                    "%04d-%02d-%02d",
+                                    selectedYear,
+                                    selectedMonth + 1,
+                                    selectedDay
+                                )
                             },
                             year,
                             month,
@@ -94,7 +99,11 @@ fun EditarPedidoScreen(
                 )
             }
 
-            Text("Productos", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp))
+            Text(
+                "Productos",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 16.dp)
+            )
 
             productos.forEachIndexed { index, producto ->
                 var expanded by remember { mutableStateOf(false) }
@@ -132,14 +141,20 @@ fun EditarPedidoScreen(
 
                 OutlinedTextField(
                     value = producto.cantidad.toString(),
-                    onValueChange = { productos[index] = producto.copy(cantidad = it.toIntOrNull() ?: producto.cantidad) },
+                    onValueChange = {
+                        productos[index] =
+                            producto.copy(cantidad = it.toIntOrNull() ?: producto.cantidad)
+                    },
                     label = { Text("Cantidad") },
                     modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
                 )
 
                 OutlinedTextField(
                     value = producto.tamano.toString(),
-                    onValueChange = { productos[index] = producto.copy(tamano = it.toIntOrNull() ?: producto.tamano) },
+                    onValueChange = {
+                        productos[index] =
+                            producto.copy(tamano = it.toIntOrNull() ?: producto.tamano)
+                    },
                     label = { Text("Tamaño (personas)") },
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                 )
@@ -148,32 +163,12 @@ fun EditarPedidoScreen(
                     onClick = { productoAEliminar = producto },
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar Producto", tint = MaterialTheme.colorScheme.error)
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Eliminar Producto",
+                        tint = MaterialTheme.colorScheme.error
+                    )
                 }
-            }
-
-            if (productoAEliminar != null) {
-                AlertDialog(
-                    onDismissRequest = { productoAEliminar = null },
-                    title = { Text("Eliminar Producto") },
-                    text = { Text("¿Estás seguro de que quieres eliminar este producto?") },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                productos.remove(productoAEliminar)
-                                productoAEliminar = null
-                                Toast.makeText(context, "Producto eliminado", Toast.LENGTH_SHORT).show()
-                            }
-                        ) {
-                            Text("Eliminar", color = Color.Red)
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { productoAEliminar = null }) {
-                            Text("Cancelar")
-                        }
-                    }
-                )
             }
 
             Button(
@@ -191,34 +186,71 @@ fun EditarPedidoScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = {
-                    if (cliente.isBlank() || productos.any { it.nombre.isBlank() || it.cantidad <= 0 || it.tamano <= 0 }) {
-                        errorMensaje = "Por favor, complete todos los campos correctamente."
-                        return@Button
-                    }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Button(
+                    onClick = {
+                        if (cliente.isBlank() || productos.any { it.nombre.isBlank() || it.cantidad <= 0 || it.tamano <= 0 }) {
+                            errorMensaje = "Por favor, complete todos los campos correctamente."
+                            return@Button
+                        }
 
-                    val pedidoActualizado = pedido.copy(
-                        cliente = cliente,
-                        productos = productos,
-                        fechaLimite = fechaLimite
-                    )
+                        val pedidoActualizado = pedido.copy(
+                            cliente = cliente,
+                            productos = productos,
+                            fechaLimite = fechaLimite
+                        )
 
-                    scope.launch {
-                        viewModel.editarPedido(pedidoActualizado) { success ->
-                            if (success) {
-                                Toast.makeText(context, "Pedido editado", Toast.LENGTH_SHORT).show()
-                                onPedidoEditado()
-                            } else {
-                                errorMensaje = "Error al editar el pedido."
+                        scope.launch {
+                            viewModel.editarPedido(pedidoActualizado) { success ->
+                                if (success) {
+                                    Toast.makeText(context, "Pedido editado", Toast.LENGTH_SHORT)
+                                        .show()
+                                    onPedidoEditado()
+                                } else {
+                                    errorMensaje = "Error al editar el pedido."
+                                }
                             }
                         }
                     }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Guardar Cambios")
+                ) {
+                    Text("Guardar Cambios")
+                }
+
+                OutlinedButton(
+                    onClick = { onPedidoEditado() }
+                ) {
+                    Text("Cancelar")
+                }
             }
         }
+    }
+
+    if (productoAEliminar != null) {
+        AlertDialog(
+            onDismissRequest = { productoAEliminar = null },
+            title = { Text("Eliminar Producto") },
+            text = { Text("¿Estás seguro de que quieres eliminar este producto?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        productos.remove(productoAEliminar)
+                        productoAEliminar = null
+                        Toast.makeText(context, "Producto eliminado", Toast.LENGTH_SHORT).show()
+                    }
+                ) {
+                    Text("Eliminar", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { productoAEliminar = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }

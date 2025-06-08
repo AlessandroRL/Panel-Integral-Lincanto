@@ -1,5 +1,6 @@
 package com.example.paneldecontrolreposteria.ui.productos
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -10,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.paneldecontrolreposteria.model.IngredienteDetalle
@@ -35,6 +37,9 @@ fun DialogEditarProducto(
     }
     var tips by remember { mutableStateOf(producto.tips ?: "") }
     var mostrarEquivalencias by remember { mutableStateOf(false) }
+    var ingredienteAEliminar by remember { mutableStateOf<IngredienteDetalle?>(null) }
+
+    val context = LocalContext.current
 
     if (mostrarEquivalencias) {
         AlertDialog(
@@ -51,6 +56,28 @@ fun DialogEditarProducto(
                     Text("🧂 1 cucharadita = 5 ml (líquido) / 3-5 gr (sólido)")
                     Text("🍵 1 taza = 240 ml (líquido) / 120-130 gr (harina/azúcar)")
                     Text("🫶 1 pizca ≈ 0.3 gramos (solo sólidos)")
+                }
+            }
+        )
+    }
+
+    if (ingredienteAEliminar != null) {
+        AlertDialog(
+            onDismissRequest = { ingredienteAEliminar = null },
+            title = { Text("Eliminar Ingrediente") },
+            text = { Text("¿Estás seguro de que quieres eliminar este ingrediente?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    ingredientes.remove(ingredienteAEliminar)
+                    ingredienteAEliminar = null
+                    Toast.makeText(context, "Ingrediente eliminado", Toast.LENGTH_SHORT).show()
+                }) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { ingredienteAEliminar = null }) {
+                    Text("Cancelar")
                 }
             }
         )
@@ -170,7 +197,7 @@ fun DialogEditarProducto(
                         Spacer(Modifier.height(4.dp))
 
                         IconButton(
-                            onClick = { ingredientes.removeAt(index) },
+                            onClick = { ingredienteAEliminar = ingrediente },
                             modifier = Modifier.align(Alignment.End)
                         ) {
                             Icon(Icons.Default.Delete, contentDescription = "Eliminar")

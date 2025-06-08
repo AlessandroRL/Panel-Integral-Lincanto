@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -48,6 +49,7 @@ fun GestionarProductos(
     var textoBusqueda by remember { mutableStateOf("") }
     var mostrarDialogoEditar by remember { mutableStateOf(false) }
     var productoParaEditar by remember { mutableStateOf<Producto?>(null) }
+    var productoAEliminar by remember { mutableStateOf<Producto?>(null) }
 
     val listaProductos by viewModel.productos.collectAsState()
     val productosFiltrados = listaProductos
@@ -176,7 +178,7 @@ fun GestionarProductos(
                                 Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar")
                             }
                             IconButton(onClick = {
-                                viewModel.eliminarProducto(producto.id)
+                                productoAEliminar = producto
                             }) {
                                 Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar")
                             }
@@ -184,6 +186,28 @@ fun GestionarProductos(
                     }
                 }
             }
+        }
+
+        if (productoAEliminar != null) {
+            AlertDialog(
+                onDismissRequest = { productoAEliminar = null },
+                title = { Text("Eliminar Producto") },
+                text = { Text("¿Estás seguro de que quieres eliminar este producto?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.eliminarProducto(productoAEliminar!!.id)
+                        Toast.makeText(context, "Producto eliminado", Toast.LENGTH_SHORT).show()
+                        productoAEliminar = null
+                    }) {
+                        Text("Eliminar", color = Color.Red)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { productoAEliminar = null }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
         }
 
         val context = LocalContext.current
@@ -214,6 +238,7 @@ fun GestionarProductos(
             onDismiss = { showDialog = false },
             onAgregar = { producto ->
                 viewModel.agregarProducto(producto)
+                Toast.makeText(context, "Producto agregado", Toast.LENGTH_SHORT).show()
                 showDialog = false
             }
         )
@@ -233,6 +258,7 @@ fun DialogoAgregarProducto(
 
     var nombre by remember { mutableStateOf("") }
     val ingredientes = remember { mutableStateListOf<IngredienteDetalle>() }
+    var ingredienteAEliminar by remember { mutableStateOf<IngredienteDetalle?>(null) }
     var preparacion by remember { mutableStateOf("") }
     var utensiliosTexto by remember { mutableStateOf("") }
     var tips by remember { mutableStateOf("") }
@@ -253,6 +279,29 @@ fun DialogoAgregarProducto(
                     Text("🧂 1 cucharadita = 5 ml (líquido) / 3-5 gr (sólido)")
                     Text("🍵 1 taza = 240 ml (líquido) / 120-130 gr (harina/azúcar)")
                     Text("🫶 1 pizca ≈ 0.3 gramos (solo sólidos)")
+                }
+            }
+        )
+    }
+
+    if (ingredienteAEliminar != null) {
+        AlertDialog(
+            onDismissRequest = { ingredienteAEliminar = null },
+            title = { Text("Eliminar Ingrediente") },
+            text = { Text("¿Estás seguro de que quieres eliminar este ingrediente?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        ingredientes.remove(ingredienteAEliminar)
+                        ingredienteAEliminar = null
+                    }
+                ) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { ingredienteAEliminar = null }) {
+                    Text("Cancelar")
                 }
             }
         )
@@ -380,7 +429,7 @@ fun DialogoAgregarProducto(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End
                         ) {
-                            IconButton(onClick = { ingredientes.removeAt(index) }) {
+                            IconButton(onClick = { ingredienteAEliminar = ingrediente }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Eliminar")
                             }
                         }

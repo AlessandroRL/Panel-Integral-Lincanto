@@ -18,6 +18,7 @@ import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.example.paneldecontrolreposteria.model.ProductoPedido
@@ -140,12 +141,24 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
                 Text("Productos Agregados:", style = MaterialTheme.typography.titleMedium)
                 productosSeleccionados.forEach { producto ->
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("- ${producto.nombre} (${producto.cantidad} u, ${producto.tamano} personas)")
-                        IconButton(onClick = { productoAEliminar = producto }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Eliminar Producto", tint = MaterialTheme.colorScheme.error)
+                        Text(
+                            text = "- ${producto.nombre} (${producto.cantidad} u, ${producto.tamano} personas)",
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(
+                            onClick = { productoAEliminar = producto }
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Eliminar Producto",
+                                tint = MaterialTheme.colorScheme.error
+                            )
                         }
                     }
                 }
@@ -161,7 +174,8 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
                             onClick = {
                                 productosSeleccionados.remove(productoAEliminar)
                                 productoAEliminar = null
-                                Toast.makeText(context, "Producto eliminado", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Producto eliminado", Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         ) {
                             Text("Eliminar", color = Color.Red)
@@ -187,7 +201,12 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
                 DatePickerDialog(
                     context,
                     { _, selectedYear, selectedMonth, selectedDay ->
-                        fechaLimite = String.format("%04d-%02d-%02d", selectedYear, selectedMonth + 1, selectedDay)
+                        fechaLimite = String.format(
+                            "%04d-%02d-%02d",
+                            selectedYear,
+                            selectedMonth + 1,
+                            selectedDay
+                        )
                     },
                     year,
                     month,
@@ -219,36 +238,49 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = {
-                    if (cliente.isBlank() || productosSeleccionados.isEmpty() || fechaLimite.isBlank()) {
-                        errorMensaje = "Por favor, complete todos los campos obligatorios."
-                        return@Button
-                    }
-                    scope.launch {
-                        try {
-                            val nuevoPedido = Pedido(
-                                cliente = cliente,
-                                productos = productosSeleccionados.map {
-                                    ProductoPedido(
-                                        nombre = it.nombre,
-                                        cantidad = it.cantidad.toInt(),
-                                        tamano = it.tamano.toInt()
-                                    )
-                                },
-                                fechaLimite = fechaLimite
-                            )
-                            viewModel.agregarPedido(nuevoPedido)
-                            Toast.makeText(context, "Pedido agregado", Toast.LENGTH_SHORT).show()
-                            onPedidoAgregado()
-                        } catch (e: Exception) {
-                            errorMensaje = "Error al agregar pedido: ${e.message}"
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Button(
+                    onClick = {
+                        if (cliente.isBlank() || productosSeleccionados.isEmpty() || fechaLimite.isBlank()) {
+                            errorMensaje = "Por favor, complete todos los campos obligatorios."
+                            return@Button
+                        }
+                        scope.launch {
+                            try {
+                                val nuevoPedido = Pedido(
+                                    cliente = cliente,
+                                    productos = productosSeleccionados.map {
+                                        ProductoPedido(
+                                            nombre = it.nombre,
+                                            cantidad = it.cantidad.toInt(),
+                                            tamano = it.tamano.toInt()
+                                        )
+                                    },
+                                    fechaLimite = fechaLimite
+                                )
+                                viewModel.agregarPedido(nuevoPedido)
+                                Toast.makeText(context, "Pedido agregado", Toast.LENGTH_SHORT)
+                                    .show()
+                                onPedidoAgregado()
+                            } catch (e: Exception) {
+                                errorMensaje = "Error al agregar pedido: ${e.message}"
+                            }
                         }
                     }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Agregar Pedido")
+                ) {
+                    Text("Agregar Pedido")
+                }
+
+                OutlinedButton(
+                    onClick = { onPedidoAgregado() }
+                ) {
+                    Text("Cancelar")
+                }
             }
         }
     }
