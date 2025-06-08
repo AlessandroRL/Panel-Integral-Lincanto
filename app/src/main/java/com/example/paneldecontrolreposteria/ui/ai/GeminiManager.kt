@@ -284,6 +284,11 @@ class GeminiManager {
           "nombreProducto": "torta tres leches",
           "campo": "ingredientes" // puede ser "ingredientes", "preparacion", "utensilios", "tips" o "todo"
         }
+        
+        - Para consultar la lista de comandos disponibles:
+        {
+          "intencion": "consultar_comando"
+        }
 
         IMPORTANTE:
         - Siempre responde solo con un JSON.

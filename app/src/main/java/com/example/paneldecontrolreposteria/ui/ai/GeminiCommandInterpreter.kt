@@ -268,6 +268,10 @@ class GeminiCommandInterpreter(
                 }
             }
 
+            "consultar_comando" -> {
+                Comando.ConsultarComando("")
+            }
+
             else -> {
                 Log.w("GeminiInterpreter", "Objeto de consulta no reconocido: $intencion")
                 Comando.ComandoNoReconocido
@@ -739,6 +743,54 @@ $tipsStr
 
                     else -> "No se reconoció la parte solicitada de ${info.nombre}. Usa ingredientes, preparación, utensilios, tips o todo."
                 }
+            }
+
+            is Comando.ConsultarComando -> {
+                """
+    🤖 **Lista de comandos disponibles**:
+
+    📝 **Pedidos**:
+    - ➕ *Agregar un pedido*:
+      Ejemplo: "Agrega un pedido para Ana con un pastel de chocolate para 10 personas y 2 cupcakes para mañana."
+    - ✏️ *Editar un pedido*:
+      Ejemplo: "Cambia la fecha del pedido de Ana al 10 de agosto."
+    - 🗑️ *Eliminar un pedido*:
+      Ejemplo: "Elimina el pedido de Ana."
+    - 📅 *Consultar pedidos*:
+      Ejemplo: "¿Qué pedidos tengo esta semana?"
+    - 🔍 *Consultar pedido por cliente*:
+      Ejemplo: "¿Qué pedido tiene Ana?"
+
+    🧺 **Ingredientes**:
+    - ➕ *Agregar un ingrediente*:
+      Ejemplo: "Agrega un ingrediente llamado azúcar con unidad gr y costo por unidad 0.5."
+    - ✏️ *Editar un ingrediente*:
+      Ejemplo: "Cambia el costo del azúcar a 0.6."
+    - 🗑️ *Eliminar un ingrediente*:
+      Ejemplo: "Elimina el ingrediente azúcar."
+    - 📋 *Consultar lista de ingredientes*:
+      Ejemplo: "¿Qué ingredientes tengo registrados?"
+    - 🔍 *Consultar si un ingrediente existe*:
+      Ejemplo: "¿Existe el ingrediente canela?"
+    - 🔢 *Consultar cantidad total de ingredientes*:
+      Ejemplo: "¿Cuántos ingredientes tengo registrados?"
+
+    🍰 **Productos**:
+    - ➕ *Agregar un producto*:
+      Ejemplo: "Agrega un producto llamado pastel de vainilla con 10 gr de harina y 35 ml de agua y como utensilio olla sopera."
+    - ✏️ *Editar un producto*:
+      Ejemplo: "Edita el producto Pastel de vainilla y agrega 10 gr de sal."
+    - 🗑️ *Eliminar un producto*:
+      Ejemplo: "Elimina el producto pastel de vainilla."
+    - 📋 *Consultar lista de productos*:
+      Ejemplo: "¿Qué productos están registrados?"
+    - 🔍 *Consultar información de un producto específico*:
+      Ejemplo: "¿Qué información tienes del producto torta tres leches?"
+    - 📄 *Consultar una parte específica de un producto*:
+      Ejemplo: "¿Cuáles son los ingredientes del producto torta tres leches?"
+
+    💡 Usa estas instrucciones para interactuar con el asistente.
+    """.trimIndent()
             }
 
             Comando.ComandoNoReconocido -> {
