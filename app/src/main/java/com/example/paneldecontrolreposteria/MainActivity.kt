@@ -40,6 +40,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.paneldecontrolreposteria.ui.asistente.AsistenteController
 import com.example.paneldecontrolreposteria.ui.ai.GeminiCommandInterpreter
+import com.example.paneldecontrolreposteria.ui.theme.PanelDeControlReposteriaTheme
 import com.example.paneldecontrolreposteria.viewmodel.GeminiViewModel
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
 
@@ -74,8 +75,10 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            val navController = rememberNavController()
-            MainApp(navController)
+            PanelDeControlReposteriaTheme {
+                val navController = rememberNavController()
+                MainApp(navController)
+            }
         }
     }
 }

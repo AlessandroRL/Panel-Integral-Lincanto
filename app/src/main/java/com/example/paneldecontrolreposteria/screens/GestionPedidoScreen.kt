@@ -21,11 +21,14 @@ import androidx.core.content.ContextCompat
 import com.example.paneldecontrolreposteria.model.Pedido
 import com.example.paneldecontrolreposteria.ui.asistente.AsistenteButtonFloating
 import android.Manifest
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.isSystemInDarkTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewModel) {
+    val isDarkTheme = isSystemInDarkTheme()
     val pedidos by viewModel.pedidos.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -55,10 +58,27 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
             }
         }
 
+    val backgroundColor = if (isDarkTheme) Color.Black else Color.White
+    val textColor = if (isDarkTheme) Color.White else Color.DarkGray
+    val cardColor = if (isDarkTheme) Color.DarkGray else Color.White
+    val gold = Color(0xFFC7A449)
+
     Scaffold(
+        containerColor = backgroundColor,
         topBar = {
             TopAppBar(
-                title = { Text("Gestión de Pedidos") },
+                title = {
+                    Text(
+                        "Gestión de Pedidos",
+                        color = textColor,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = backgroundColor,
+                    titleContentColor = textColor,
+                    actionIconContentColor = gold
+                ),
                 actions = {
                     Box {
                         IconButton(onClick = { filtroMenuExpandido = true }) {
@@ -72,13 +92,16 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                                 DropdownMenuItem(
                                     text = {
                                         Row(
-                                            horizontalArrangement = Arrangement.Start,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(estado)
+                                            Text(
+                                                estado,
+                                                color = textColor,
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
                                             if (estado in filtrosSeleccionados) {
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Icon(Icons.Default.Check, contentDescription = "Seleccionado")
+                                                Icon(Icons.Default.Check, contentDescription = "Seleccionado", tint = gold)
                                             }
                                         }
                                     },
@@ -110,13 +133,16 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                                 DropdownMenuItem(
                                     text = {
                                         Row(
-                                            horizontalArrangement = Arrangement.Start,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text("$orden${if (orden != "Ninguno") " (${if (ordenAscendente) "Ascendente" else "Descendente"})" else ""}")
+                                            Text(
+                                                "$orden${if (orden != "Ninguno") " (${if (ordenAscendente) "Ascendente" else "Descendente"})" else ""}",
+                                                color = textColor,
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
                                             if (ordenFecha == orden) {
                                                 Spacer(modifier = Modifier.width(8.dp))
-                                                Icon(Icons.Default.Check, contentDescription = "Seleccionado")
+                                                Icon(Icons.Default.Check, contentDescription = "Seleccionado", tint = gold)
                                             }
                                         }
                                     },
@@ -146,8 +172,13 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                 horizontalAlignment = Alignment.End,
                 modifier = Modifier.padding(end = 16.dp, bottom = 16.dp)
             ) {
-                FloatingActionButton(onClick = { navController.navigate("agregarPedido") }) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "Agregar Pedido")
+                FloatingActionButton(
+                    onClick = { navController.navigate("agregarPedido") },
+                    containerColor = gold,
+                    contentColor = textColor,
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Agregar Pedido")
                 }
                 AsistenteButtonFloating(
                     currentTabIndex = 0,
@@ -159,7 +190,6 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                         ) {
                             Toast.makeText(context, "🎤 Escuchando...", Toast.LENGTH_SHORT).show()
                             navController.navigate("asistenteVirtual?activarEscuchaInicial=true")
-
                         } else {
                             Toast.makeText(context, "Permiso de grabación no concedido", Toast.LENGTH_SHORT).show()
                         }
@@ -172,18 +202,27 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
         LazyColumn(modifier = Modifier.padding(padding)) {
             items(pedidosFiltrados) { pedido ->
                 Card(
-                    modifier = Modifier.fillMaxWidth().padding(8.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = cardColor)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Cliente: ${pedido.cliente}", style = MaterialTheme.typography.titleMedium)
-                        Text("Productos:")
+                        Text("Cliente: ${pedido.cliente}", style = MaterialTheme.typography.titleMedium, color = textColor)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Productos:", color = textColor)
                         pedido.productos.forEach { producto ->
-                            Text("- ${producto.nombre} (${producto.cantidad} u, ${producto.tamano} personas)")
+                            Text("- ${producto.nombre} (${producto.cantidad} u, ${producto.tamano} personas)", color = textColor)
                         }
-                        Text("Estado: ${pedido.estado}")
-                        Text("Fecha de Registro: ${pedido.fechaRegistro}")
-                        Text("Fecha Límite: ${pedido.fechaLimite}")
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Estado: ${pedido.estado}", color = textColor)
+                        Text("Fecha de Registro: ${pedido.fechaRegistro}", color = textColor)
+                        Text("Fecha Límite: ${pedido.fechaLimite}", color = textColor)
+
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -196,28 +235,34 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                                         viewModel.editarPedido(
                                             pedido.copy(estado = nuevoEstado)
                                         ) { result ->
-                                            if (result) {
-                                                Toast.makeText(context, "Pedido actualizado", Toast.LENGTH_SHORT).show()
-                                            } else {
-                                                Toast.makeText(context, "Error al actualizar el pedido", Toast.LENGTH_SHORT).show()
-                                            }
+                                            val mensaje = if (result) "Pedido actualizado" else "Error al actualizar el pedido"
+                                            Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 },
+                                shape = RoundedCornerShape(16.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (pedido.estado == "Listo para entrega") Color.Gray else MaterialTheme.colorScheme.primary,
-                                    contentColor = if (pedido.estado == "Listo para entrega") Color.LightGray else MaterialTheme.colorScheme.onPrimary
+                                    containerColor = if (pedido.estado == "Listo para entrega") Color.LightGray else gold,
+                                    contentColor = Color.Black
                                 )
                             ) {
-                                Text(if (pedido.estado == "Listo para entrega") "Revertir estado" else "Marcar como Entregado")
+                                Text(
+                                    text = if (pedido.estado == "Listo para entrega") "Revertir estado" else "Marcar como Entregado",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = Color.DarkGray
+                                )
                             }
-                            Button(
-                                onClick = {
-                                    navController.navigate("editarPedido/${pedido.id}")
-                                }
+
+                            IconButton(
+                                onClick = { navController.navigate("editarPedido/${pedido.id}") }
                             ) {
-                                Text("Editar")
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Editar",
+                                    tint = gold
+                                )
                             }
+
                             IconButton(onClick = {
                                 pedidoAEliminar = pedido
                                 mostrarDialogo = true
@@ -234,8 +279,20 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
     if (mostrarDialogo && pedidoAEliminar != null) {
         AlertDialog(
             onDismissRequest = { mostrarDialogo = false },
-            title = { Text("Eliminar Pedido") },
-            text = { Text("¿Estás seguro de que quieres eliminar este pedido?") },
+            title = {
+                Text(
+                    "Eliminar Pedido",
+                    color = textColor,
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
+            text = {
+                Text(
+                    "¿Estás seguro de que quieres eliminar este pedido?",
+                    color = textColor,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -246,14 +303,15 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                         }
                     }
                 ) {
-                    Text("Eliminar", color = Color.Red)
+                    Text("Eliminar", color = Color.Red, style = MaterialTheme.typography.bodyLarge)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { mostrarDialogo = false }) {
-                    Text("Cancelar")
+                    Text("Cancelar", color = gold, style = MaterialTheme.typography.bodyLarge)
                 }
-            }
+            },
+            containerColor = cardColor
         )
     }
 }

@@ -15,7 +15,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.DropdownMenuItem
 import android.app.DatePickerDialog
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.ui.Alignment
@@ -28,17 +33,13 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit) {
+    val isDarkTheme = isSystemInDarkTheme()
     var cliente by remember { mutableStateOf("") }
     var fechaLimite by remember { mutableStateOf("") }
     var errorMensaje by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
-    data class ProductoSeleccionado(
-        val nombre: String,
-        var cantidad: String,
-        var tamano: String
-    )
-
+    data class ProductoSeleccionado(val nombre: String, var cantidad: String, var tamano: String)
     var productosSeleccionados by remember { mutableStateOf(mutableListOf<ProductoSeleccionado>()) }
 
     var productosDisponibles by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -49,239 +50,240 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
     var productoAEliminar by remember { mutableStateOf<ProductoSeleccionado?>(null) }
     val context = LocalContext.current
 
+    val backgroundColor = if (isDarkTheme) Color.Black else Color.White
+    val textColor = if (isDarkTheme) Color.White else Color.DarkGray
+    val cardColor = if (isDarkTheme) Color.DarkGray else Color.White
+    val gold = Color(0xFFC7A449)
+
     LaunchedEffect(Unit) {
-        viewModel.obtenerNombresProductos { productos ->
-            productosDisponibles = productos
-        }
+        viewModel.obtenerNombresProductos { productos -> productosDisponibles = productos }
+    }
+
+    val calendar = Calendar.getInstance()
+    val year = calendar.get(Calendar.YEAR)
+    val month = calendar.get(Calendar.MONTH)
+    val day = calendar.get(Calendar.DAY_OF_MONTH)
+    val datePickerDialog = remember {
+        DatePickerDialog(context, { _, y, m, d ->
+            fechaLimite = String.format("%04d-%02d-%02d", y, m + 1, d)
+        }, year, month, day)
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Agregar Pedido") }) }
+        containerColor = backgroundColor,
+        topBar = {
+            TopAppBar(
+                title = { Text("Agregar Pedido", style = MaterialTheme.typography.titleLarge, color = textColor) },
+                colors = TopAppBarDefaults.mediumTopAppBarColors(containerColor = backgroundColor, titleContentColor = textColor)
+            )
+        }
     ) { padding ->
-        Column(modifier = Modifier
-            .padding(padding)
-            .padding(16.dp)
-            .fillMaxSize()) {
-
-            OutlinedTextField(
-                value = cliente,
-                onValueChange = { cliente = it },
-                label = { Text("Cliente") },
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(8.dp),
                 modifier = Modifier.fillMaxWidth(),
-                isError = errorMensaje != null && cliente.isBlank()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
+                colors = CardDefaults.cardColors(containerColor = cardColor)
             ) {
-                OutlinedTextField(
-                    readOnly = true,
-                    value = productoActual,
-                    onValueChange = {},
-                    label = { Text("Producto") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth(),
-                    isError = errorMensaje != null && productoActual.isBlank()
-                )
+                Column(modifier = Modifier.padding(16.dp)) {
+                    OutlinedTextField(
+                        value = cliente,
+                        onValueChange = { cliente = it },
+                        label = { Text("Cliente", color = textColor) },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = errorMensaje != null && cliente.isBlank(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
 
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    productosDisponibles.forEach { nombre ->
-                        DropdownMenuItem(
-                            text = { Text(nombre) },
-                            onClick = {
-                                productoActual = nombre
-                                expanded = false
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+                        OutlinedTextField(
+                            readOnly = true,
+                            value = productoActual,
+                            onValueChange = {},
+                            label = { Text("Producto", color = textColor) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                            isError = errorMensaje != null && productoActual.isBlank(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                            productosDisponibles.forEach { nombre ->
+                                DropdownMenuItem(
+                                    text = { Text(nombre,color = textColor, style = MaterialTheme.typography.bodyLarge) },
+                                    onClick = {
+                                        productoActual = nombre
+                                        expanded = false
+                                    }
+                                )
                             }
-                        )
+                        }
                     }
-                }
-            }
 
-            OutlinedTextField(
-                value = cantidadActual,
-                onValueChange = { cantidadActual = it },
-                label = { Text("Cantidad") },
-                modifier = Modifier.fillMaxWidth(),
-                isError = cantidadActual.toIntOrNull() == null
-            )
+                    Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedTextField(
-                value = tamanoActual,
-                onValueChange = { tamanoActual = it },
-                label = { Text("Tamaño (Cantidad de Personas)") },
-                modifier = Modifier.fillMaxWidth(),
-                isError = tamanoActual.isBlank()
-            )
+                    OutlinedTextField(
+                        value = cantidadActual,
+                        onValueChange = { cantidadActual = it },
+                        label = { Text("Cantidad") },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = cantidadActual.toIntOrNull() == null,
+                        shape = RoundedCornerShape(12.dp)
+                    )
 
-            Button(
-                onClick = {
-                    if (productoActual.isNotBlank() && cantidadActual.isNotBlank() && tamanoActual.isNotBlank()) {
-                        productosSeleccionados.add(
-                            ProductoSeleccionado(productoActual, cantidadActual, tamanoActual)
-                        )
-                        productoActual = ""
-                        cantidadActual = ""
-                        tamanoActual = ""
+                    OutlinedTextField(
+                        value = tamanoActual,
+                        onValueChange = { tamanoActual = it },
+                        label = { Text("Tamaño (personas)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = tamanoActual.isBlank(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Button(
+                        onClick = {
+                            if (productoActual.isNotBlank() && cantidadActual.isNotBlank() && tamanoActual.isNotBlank()) {
+                                productosSeleccionados.add(ProductoSeleccionado(productoActual, cantidadActual, tamanoActual))
+                                productoActual = ""
+                                cantidadActual = ""
+                                tamanoActual = ""
+                            }
+                        },
+                        modifier = Modifier
+                            .padding(vertical = 12.dp)
+                            .fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = gold)
+                    ) {
+                        Text("Añadir Producto", color = textColor, style = MaterialTheme.typography.bodyLarge)
                     }
-                },
-                modifier = Modifier.padding(vertical = 8.dp)
-            ) {
-                Text("Añadir Producto")
-            }
 
-            if (productosSeleccionados.isNotEmpty()) {
-                Text("Productos Agregados:", style = MaterialTheme.typography.titleMedium)
-                productosSeleccionados.forEach { producto ->
-                    Row(
+                    if (productosSeleccionados.isNotEmpty()) {
+                        Text("Productos Agregados:", style = MaterialTheme.typography.titleMedium)
+                        productosSeleccionados.forEach { producto ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = gold)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        "- ${producto.nombre} (${producto.cantidad} u, ${producto.tamano} personas)",
+                                        modifier = Modifier.weight(1f),
+                                        color = textColor
+                                    )
+                                    IconButton(onClick = { productoAEliminar = producto }) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = fechaLimite,
+                        onValueChange = {},
+                        label = { Text("Fecha Límite") },
+                        readOnly = true,
+                        enabled = false,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .clickable { datePickerDialog.show() },
+                        shape = RoundedCornerShape(12.dp),
+                        isError = errorMensaje != null && fechaLimite.isBlank()
+                    )
+
+                    if (errorMensaje != null) {
+                        Text(errorMensaje!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = "- ${producto.nombre} (${producto.cantidad} u, ${producto.tamano} personas)",
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(
-                            onClick = { productoAEliminar = producto }
+                        OutlinedButton(
+                            onClick = { onPedidoAgregado() },
+                            border = BorderStroke(1.dp, Color.Red),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "Eliminar Producto",
-                                tint = MaterialTheme.colorScheme.error
-                            )
+                            Text("Cancelar", color = Color.Red, style = MaterialTheme.typography.bodyLarge)
                         }
-                    }
-                }
-            }
 
-            if (productoAEliminar != null) {
-                AlertDialog(
-                    onDismissRequest = { productoAEliminar = null },
-                    title = { Text("Eliminar Producto") },
-                    text = { Text("¿Estás seguro de que quieres eliminar este producto?") },
-                    confirmButton = {
-                        TextButton(
+                        Button(
                             onClick = {
-                                productosSeleccionados.remove(productoAEliminar)
-                                productoAEliminar = null
-                                Toast.makeText(context, "Producto eliminado", Toast.LENGTH_SHORT)
-                                    .show()
-                            }
-                        ) {
-                            Text("Eliminar", color = Color.Red)
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { productoAEliminar = null }) {
-                            Text("Cancelar")
-                        }
-                    }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val context = LocalContext.current
-            val calendar = Calendar.getInstance()
-            val year = calendar.get(Calendar.YEAR)
-            val month = calendar.get(Calendar.MONTH)
-            val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-            val datePickerDialog = remember {
-                DatePickerDialog(
-                    context,
-                    { _, selectedYear, selectedMonth, selectedDay ->
-                        fechaLimite = String.format(
-                            "%04d-%02d-%02d",
-                            selectedYear,
-                            selectedMonth + 1,
-                            selectedDay
-                        )
-                    },
-                    year,
-                    month,
-                    day
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-                    .clickable { datePickerDialog.show() }
-            ) {
-                OutlinedTextField(
-                    value = fechaLimite,
-                    onValueChange = {},
-                    label = { Text("Fecha Límite") },
-                    readOnly = true,
-                    enabled = false,
-                    isError = errorMensaje != null && fechaLimite.isBlank(),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-
-            if (errorMensaje != null) {
-                Text(errorMensaje!!, color = MaterialTheme.colorScheme.error)
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Button(
-                    onClick = {
-                        if (cliente.isBlank() || productosSeleccionados.isEmpty() || fechaLimite.isBlank()) {
-                            errorMensaje = "Por favor, complete todos los campos obligatorios."
-                            return@Button
-                        }
-                        scope.launch {
-                            try {
-                                val nuevoPedido = Pedido(
-                                    cliente = cliente,
-                                    productos = productosSeleccionados.map {
-                                        ProductoPedido(
-                                            nombre = it.nombre,
-                                            cantidad = it.cantidad.toInt(),
-                                            tamano = it.tamano.toInt()
+                                if (cliente.isBlank() || productosSeleccionados.isEmpty() || fechaLimite.isBlank()) {
+                                    errorMensaje = "Por favor, complete todos los campos obligatorios."
+                                    return@Button
+                                }
+                                scope.launch {
+                                    try {
+                                        val nuevoPedido = Pedido(
+                                            cliente = cliente,
+                                            productos = productosSeleccionados.map {
+                                                ProductoPedido(it.nombre, it.cantidad.toInt(), it.tamano.toInt())
+                                            },
+                                            fechaLimite = fechaLimite
                                         )
-                                    },
-                                    fechaLimite = fechaLimite
-                                )
-                                viewModel.agregarPedido(nuevoPedido)
-                                Toast.makeText(context, "Pedido agregado", Toast.LENGTH_SHORT)
-                                    .show()
-                                onPedidoAgregado()
-                            } catch (e: Exception) {
-                                errorMensaje = "Error al agregar pedido: ${e.message}"
-                            }
+                                        viewModel.agregarPedido(nuevoPedido)
+                                        Toast.makeText(context, "Pedido agregado", Toast.LENGTH_SHORT).show()
+                                        onPedidoAgregado()
+                                    } catch (e: Exception) {
+                                        errorMensaje = "Error al agregar pedido: ${e.message}"
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = gold),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Agregar Pedido", color = textColor, style = MaterialTheme.typography.bodyLarge)
                         }
                     }
-                ) {
-                    Text("Agregar Pedido")
-                }
-
-                OutlinedButton(
-                    onClick = { onPedidoAgregado() }
-                ) {
-                    Text("Cancelar")
                 }
             }
         }
+    }
+
+    if (productoAEliminar != null) {
+        AlertDialog(
+            onDismissRequest = { productoAEliminar = null },
+            title = { Text("Eliminar Producto", style = MaterialTheme.typography.titleLarge) },
+            text = { Text("¿Estás seguro de que quieres eliminar este producto?",
+                color = textColor,
+                style = MaterialTheme.typography.bodyLarge
+            ) },
+            confirmButton = {
+                TextButton(onClick = {
+                    productosSeleccionados.remove(productoAEliminar)
+                    productoAEliminar = null
+                    Toast.makeText(context, "Producto eliminado", Toast.LENGTH_SHORT).show()
+                }) {
+                    Text("Eliminar", color = Color.Red, style = MaterialTheme.typography.bodyLarge)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { productoAEliminar = null }) {
+                    Text("Cancelar", color = gold, style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+        )
     }
 }

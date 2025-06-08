@@ -2,6 +2,7 @@ package com.example.paneldecontrolreposteria.screens
 
 import android.annotation.SuppressLint
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +20,8 @@ import com.example.paneldecontrolreposteria.model.ProductoPedido
 import com.example.paneldecontrolreposteria.viewmodel.PedidoViewModel
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,6 +31,12 @@ fun EditarPedidoScreen(
     pedido: Pedido,
     onPedidoEditado: () -> Unit
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
+    val backgroundColor = if (isDarkTheme) Color.Black else Color.White
+    val textColor = if (isDarkTheme) Color.White else Color.DarkGray
+    val cardColor = if (isDarkTheme) Color.DarkGray else Color.White
+    val gold = Color(0xFFC7A449)
+
     var cliente by remember { mutableStateOf(pedido.cliente) }
     var fechaLimite by remember { mutableStateOf(pedido.fechaLimite) }
     var errorMensaje by remember { mutableStateOf<String?>(null) }
@@ -49,182 +58,204 @@ fun EditarPedidoScreen(
     val month = calendar.get(Calendar.MONTH)
     val day = calendar.get(Calendar.DAY_OF_MONTH)
 
+    val datePickerDialog = remember {
+        android.app.DatePickerDialog(
+            context,
+            { _, selectedYear, selectedMonth, selectedDay ->
+                fechaLimite = String.format(
+                    "%04d-%02d-%02d",
+                    selectedYear,
+                    selectedMonth + 1,
+                    selectedDay
+                )
+            },
+            year,
+            month,
+            day
+        )
+    }
+
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Editar Pedido") }) }
+        containerColor = backgroundColor,
+        topBar = {
+            TopAppBar(
+                title = { Text("Editar Pedido", style = MaterialTheme.typography.titleLarge, color = textColor) },
+                colors = TopAppBarDefaults.mediumTopAppBarColors(containerColor = backgroundColor, titleContentColor = textColor)
+            )
+        }
     ) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
                 .padding(16.dp)
-                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
         ) {
-            OutlinedTextField(
-                value = cliente,
-                onValueChange = { cliente = it },
-                label = { Text("Cliente") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-                    .clickable {
-                        val datePickerDialog = android.app.DatePickerDialog(
-                            context,
-                            { _, selectedYear, selectedMonth, selectedDay ->
-                                fechaLimite = String.format(
-                                    "%04d-%02d-%02d",
-                                    selectedYear,
-                                    selectedMonth + 1,
-                                    selectedDay
-                                )
-                            },
-                            year,
-                            month,
-                            day
-                        )
-                        datePickerDialog.show()
-                    }
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = cardColor)
             ) {
-                OutlinedTextField(
-                    value = fechaLimite,
-                    onValueChange = {},
-                    label = { Text("Fecha Límite") },
-                    readOnly = true,
-                    enabled = false,
-                    isError = errorMensaje != null && fechaLimite.isBlank(),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            Text(
-                "Productos",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 16.dp)
-            )
-
-            productos.forEachIndexed { index, producto ->
-                var expanded by remember { mutableStateOf(false) }
-
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
-                ) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     OutlinedTextField(
-                        readOnly = true,
-                        value = producto.nombre,
-                        onValueChange = {},
-                        label = { Text("Producto ${index + 1}") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
+                        value = cliente,
+                        onValueChange = { cliente = it },
+                        label = { Text("Cliente", color = textColor) },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = errorMensaje != null && cliente.isBlank(),
+                        shape = RoundedCornerShape(12.dp)
                     )
 
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        productosDisponibles.forEach { nombre ->
-                            DropdownMenuItem(
-                                text = { Text(nombre) },
-                                onClick = {
-                                    productos[index] = producto.copy(nombre = nombre)
-                                    expanded = false
-                                }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    productos.forEachIndexed { index, producto ->
+                        var expanded by remember { mutableStateOf(false) }
+
+                        ExposedDropdownMenuBox(
+                            expanded = expanded,
+                            onExpandedChange = { expanded = !expanded }
+                        ) {
+                            OutlinedTextField(
+                                readOnly = true,
+                                value = producto.nombre,
+                                onValueChange = {},
+                                label = { Text("Producto ${index + 1}", color = textColor) },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                modifier = Modifier
+                                    .menuAnchor()
+                                    .fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
                             )
-                        }
-                    }
-                }
 
-                OutlinedTextField(
-                    value = producto.cantidad.toString(),
-                    onValueChange = {
-                        productos[index] =
-                            producto.copy(cantidad = it.toIntOrNull() ?: producto.cantidad)
-                    },
-                    label = { Text("Cantidad") },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
-                )
-
-                OutlinedTextField(
-                    value = producto.tamano.toString(),
-                    onValueChange = {
-                        productos[index] =
-                            producto.copy(tamano = it.toIntOrNull() ?: producto.tamano)
-                    },
-                    label = { Text("Tamaño (personas)") },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                )
-
-                IconButton(
-                    onClick = { productoAEliminar = producto },
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Eliminar Producto",
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-
-            Button(
-                onClick = {
-                    productos.add(ProductoPedido(nombre = "", cantidad = 1, tamano = 1))
-                },
-                modifier = Modifier.padding(vertical = 8.dp)
-            ) {
-                Text("Agregar otro producto")
-            }
-
-            if (errorMensaje != null) {
-                Text(errorMensaje!!, color = MaterialTheme.colorScheme.error)
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Button(
-                    onClick = {
-                        if (cliente.isBlank() || productos.any { it.nombre.isBlank() || it.cantidad <= 0 || it.tamano <= 0 }) {
-                            errorMensaje = "Por favor, complete todos los campos correctamente."
-                            return@Button
-                        }
-
-                        val pedidoActualizado = pedido.copy(
-                            cliente = cliente,
-                            productos = productos,
-                            fechaLimite = fechaLimite
-                        )
-
-                        scope.launch {
-                            viewModel.editarPedido(pedidoActualizado) { success ->
-                                if (success) {
-                                    Toast.makeText(context, "Pedido editado", Toast.LENGTH_SHORT)
-                                        .show()
-                                    onPedidoEditado()
-                                } else {
-                                    errorMensaje = "Error al editar el pedido."
+                            ExposedDropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                productosDisponibles.forEach { nombre ->
+                                    DropdownMenuItem(
+                                        text = { Text(nombre, color = textColor, style = MaterialTheme.typography.bodyLarge) },
+                                        onClick = {
+                                            productos[index] = producto.copy(nombre = nombre)
+                                            expanded = false
+                                        }
+                                    )
                                 }
                             }
                         }
-                    }
-                ) {
-                    Text("Guardar Cambios")
-                }
 
-                OutlinedButton(
-                    onClick = { onPedidoEditado() }
-                ) {
-                    Text("Cancelar")
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        OutlinedTextField(
+                            value = producto.cantidad.toString(),
+                            onValueChange = {
+                                productos[index] =
+                                    producto.copy(cantidad = it.toIntOrNull() ?: producto.cantidad)
+                            },
+                            label = { Text("Cantidad", color = textColor) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        OutlinedTextField(
+                            value = producto.tamano.toString(),
+                            onValueChange = {
+                                productos[index] =
+                                    producto.copy(tamano = it.toIntOrNull() ?: producto.tamano)
+                            },
+                            label = { Text("Tamaño (personas)", color = textColor) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        IconButton(
+                            onClick = { productoAEliminar = producto },
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Eliminar Producto",
+                                tint = Color.Red
+                            )
+                        }
+                    }
+
+                    Button(
+                        onClick = {
+                            productos.add(ProductoPedido(nombre = "", cantidad = 1, tamano = 1))
+                        },
+                        modifier = Modifier
+                            .padding(vertical = 12.dp)
+                            .fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = gold)
+                    ) {
+                        Text("Añadir Producto", color = textColor, style = MaterialTheme.typography.bodyLarge)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = fechaLimite,
+                        onValueChange = {},
+                        label = { Text("Fecha Límite", color = textColor) },
+                        readOnly = true,
+                        enabled = false,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { datePickerDialog.show() },
+                        shape = RoundedCornerShape(12.dp),
+                        isError = errorMensaje != null && fechaLimite.isBlank()
+                    )
+
+                    if (errorMensaje != null) {
+                        Text(errorMensaje!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        OutlinedButton(
+                            onClick = { onPedidoEditado() },
+                            border = BorderStroke(1.dp, Color.Red),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Cancelar", color = Color.Red, style = MaterialTheme.typography.bodyLarge)
+                        }
+
+                        Button(
+                            onClick = {
+                                if (cliente.isBlank() || productos.any { it.nombre.isBlank() || it.cantidad <= 0 || it.tamano <= 0 }) {
+                                    errorMensaje = "Por favor, complete todos los campos correctamente."
+                                    return@Button
+                                }
+
+                                val pedidoActualizado = pedido.copy(
+                                    cliente = cliente,
+                                    productos = productos,
+                                    fechaLimite = fechaLimite
+                                )
+
+                                scope.launch {
+                                    viewModel.editarPedido(pedidoActualizado) { success ->
+                                        if (success) {
+                                            Toast.makeText(context, "Pedido editado", Toast.LENGTH_SHORT).show()
+                                            onPedidoEditado()
+                                        } else {
+                                            errorMensaje = "Error al editar el pedido."
+                                        }
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = gold),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Guardar Cambios", color = textColor, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
                 }
             }
         }
@@ -233,8 +264,8 @@ fun EditarPedidoScreen(
     if (productoAEliminar != null) {
         AlertDialog(
             onDismissRequest = { productoAEliminar = null },
-            title = { Text("Eliminar Producto") },
-            text = { Text("¿Estás seguro de que quieres eliminar este producto?") },
+            title = { Text("Eliminar Producto", style = MaterialTheme.typography.titleLarge) },
+            text = { Text("¿Estás seguro de que quieres eliminar este producto?", color = textColor, style = MaterialTheme.typography.bodyLarge) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -243,14 +274,15 @@ fun EditarPedidoScreen(
                         Toast.makeText(context, "Producto eliminado", Toast.LENGTH_SHORT).show()
                     }
                 ) {
-                    Text("Eliminar", color = Color.Red)
+                    Text("Eliminar", color = Color.Red, style = MaterialTheme.typography.bodyLarge)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { productoAEliminar = null }) {
-                    Text("Cancelar")
+                    Text("Cancelar", color = gold, style = MaterialTheme.typography.bodyLarge)
                 }
-            }
+            },
+            containerColor = cardColor
         )
     }
 }
