@@ -70,6 +70,7 @@ fun GestionarProductos(
             TopAppBar(
                 title = {
                     Text("Gestión de Productos", style = MaterialTheme.typography.titleLarge, color = textColor) },
+                modifier = Modifier.height(50.dp),
                 colors = TopAppBarDefaults.mediumTopAppBarColors(containerColor = backgroundColor, titleContentColor = textColor)
             )
         },

@@ -3,6 +3,6 @@
 
     <style name="Theme.PanelDeControlReposteria" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/background_dark</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowSplashScreenBackground">@android:color/black</item>
     </style>
 </resources>

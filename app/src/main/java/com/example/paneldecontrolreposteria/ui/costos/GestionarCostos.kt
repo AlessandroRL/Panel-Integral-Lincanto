@@ -62,9 +62,9 @@ fun GestionarCostos(
     Scaffold { padding ->
         Box(
             modifier = Modifier
-                .padding(padding)
                 .fillMaxSize()
                 .background(backgroundColor)
+                .height(10.dp)
         ) {
             Column(
                 modifier = Modifier

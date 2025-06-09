@@ -44,7 +44,10 @@ import com.example.paneldecontrolreposteria.ui.ai.GeminiCommandInterpreter
 import com.example.paneldecontrolreposteria.ui.theme.PanelDeControlReposteriaTheme
 import com.example.paneldecontrolreposteria.viewmodel.GeminiViewModel
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 
+@Suppress("DEPRECATION")
 class MainActivity : ComponentActivity() {
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -53,9 +56,15 @@ class MainActivity : ComponentActivity() {
         val splashScreen = installSplashScreen()
 
         super.onCreate(savedInstanceState)
-        splashScreen.setKeepOnScreenCondition {
-            false
-        }
+        splashScreen.setKeepOnScreenCondition { false }
+
+        val window = window
+        val isDarkTheme = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+        window.statusBarColor = if (isDarkTheme) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val insetsController = WindowInsetsControllerCompat(window, window.decorView)
+        insetsController.isAppearanceLightStatusBars = !isDarkTheme
 
         val requestPermissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestPermission()

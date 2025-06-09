@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <style name="Theme.PanelDeControlReposteria" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:forceDarkAllowed">false</item>
         <item name="windowSplashScreenBackground">#201e1f</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/logo_recortado</item>
         <item name="android:windowBackground">#201e1f</item>
+        <item name="postSplashScreenTheme">@style/Theme.PanelDeControlReposteria</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowSplashScreenBackground">@android:color/black</item>
     </style>
 </resources>
