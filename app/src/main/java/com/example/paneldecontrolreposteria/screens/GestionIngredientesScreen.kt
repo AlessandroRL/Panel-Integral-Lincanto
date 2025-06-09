@@ -365,7 +365,7 @@ fun GestionarIngredientes(
             },
             dismissButton = {
                 TextButton(onClick = { mostrarDialogoEdicion = false }) {
-                    Text("Cancelar", color = gold, style = MaterialTheme.typography.bodyLarge)
+                    Text("Cancelar", color = Color.Red, style = MaterialTheme.typography.bodyLarge)
                 }
             },
             containerColor = cardColor
