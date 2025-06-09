@@ -6,9 +6,11 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -83,17 +85,33 @@ fun GestionarIngredientes(
     var mostrarDialogoEdicion by remember { mutableStateOf(false) }
     var ingredienteAEliminar by remember { mutableStateOf<Ingrediente?>(null) }
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text("Registrar Ingrediente", style = MaterialTheme.typography.titleLarge)
+    val isDarkTheme = isSystemInDarkTheme()
+    val textColor = if (isDarkTheme) Color.White else Color.DarkGray
+    val cardColor = if (isDarkTheme) Color.DarkGray else Color.White
+    val gold = Color(0xFFC7A449)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            "Registrar Ingrediente",
+            style = MaterialTheme.typography.titleLarge,
+            color = textColor
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
             value = nombre,
             onValueChange = { nombre = it },
-            label = { Text("Nombre") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp)
+            label = { Text("Nombre", color = textColor) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         ExposedDropdownMenuBox(
             expanded = unidadExpanded,
@@ -102,12 +120,13 @@ fun GestionarIngredientes(
             OutlinedTextField(
                 value = unidad,
                 onValueChange = {},
-                label = { Text("Unidad") },
+                label = { Text("Unidad", color = textColor) },
                 readOnly = true,
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unidadExpanded) },
                 modifier = Modifier
                     .menuAnchor()
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
             )
             ExposedDropdownMenu(
                 expanded = unidadExpanded,
@@ -115,7 +134,7 @@ fun GestionarIngredientes(
             ) {
                 unidades.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(option) },
+                        text = { Text(option, color = textColor, style = MaterialTheme.typography.bodyLarge) },
                         onClick = {
                             unidad = option
                             unidadExpanded = false
@@ -125,19 +144,20 @@ fun GestionarIngredientes(
             }
         }
 
+        Spacer(modifier = Modifier.height(8.dp))
+
         OutlinedTextField(
             value = costoUnidad,
             onValueChange = { costoUnidad = it },
-            label = { Text("Costo por unidad") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp)
+            label = { Text("Costo por unidad", color = textColor) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
         )
 
+        Spacer(modifier = Modifier.height(16.dp))
+
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -157,10 +177,13 @@ fun GestionarIngredientes(
                     } else {
                         Toast.makeText(context, "Por favor, complete todos los campos", Toast.LENGTH_SHORT).show()
                     }
-                }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = gold),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Guardar Ingrediente")
+                Text("Guardar Ingrediente", color = textColor, style = MaterialTheme.typography.bodyLarge)
             }
+
             AsistenteButtonFloating(
                 currentTabIndex = 0,
                 onMicClick = {
@@ -179,22 +202,33 @@ fun GestionarIngredientes(
             )
         }
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Text("Ingredientes Registrados", style = MaterialTheme.typography.titleMedium)
+        HorizontalDivider(color = textColor)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            "Ingredientes Registrados",
+            style = MaterialTheme.typography.titleMedium,
+            color = textColor
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
             value = textoBusqueda,
             onValueChange = { viewModel.actualizarBusqueda(it) },
-            label = { Text("Buscar por nombre") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
+            label = { Text("Buscar por nombre", color = textColor) },
+            modifier = Modifier.fillMaxWidth(),
             leadingIcon = {
-                Icon(Icons.Default.Search, contentDescription = "Buscar")
+                Icon(Icons.Default.Search, contentDescription = "Buscar", tint = textColor)
             },
-            singleLine = true
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp)
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         LazyColumn {
             items(ingredientesFiltrados) { ingrediente ->
@@ -202,7 +236,8 @@ fun GestionarIngredientes(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    colors = CardDefaults.cardColors(containerColor = cardColor),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Row(
                         modifier = Modifier
@@ -211,16 +246,16 @@ fun GestionarIngredientes(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text("Nombre: ${ingrediente.nombre}")
-                            Text("Unidad: ${ingrediente.unidad}")
-                            Text("Costo: ${ingrediente.costoUnidad}")
+                            Text("Nombre: ${ingrediente.nombre}", color = textColor)
+                            Text("Unidad: ${ingrediente.unidad}", color = textColor)
+                            Text("Costo: ${ingrediente.costoUnidad}", color = textColor)
                         }
                         Row {
                             IconButton(onClick = {
                                 ingredienteAEditar = ingrediente
                                 mostrarDialogoEdicion = true
                             }) {
-                                Icon(Icons.Default.Edit, contentDescription = "Editar")
+                                Icon(Icons.Default.Edit, contentDescription = "Editar", tint = gold)
                             }
                             IconButton(onClick = {
                                 ingredienteAEliminar = ingrediente
@@ -237,8 +272,8 @@ fun GestionarIngredientes(
     if (ingredienteAEliminar != null) {
         AlertDialog(
             onDismissRequest = { ingredienteAEliminar = null },
-            title = { Text("Eliminar Ingrediente") },
-            text = { Text("¿Estás seguro de que quieres eliminar este ingrediente?") },
+            title = { Text("Eliminar Ingrediente", style = MaterialTheme.typography.titleLarge, color = textColor) },
+            text = { Text("¿Estás seguro de que quieres eliminar este ingrediente?", color = textColor, style = MaterialTheme.typography.bodyLarge) },
             confirmButton = {
                 TextButton(onClick = {
                     scope.launch {
@@ -247,14 +282,15 @@ fun GestionarIngredientes(
                         ingredienteAEliminar = null
                     }
                 }) {
-                    Text("Eliminar", color = Color.Red)
+                    Text("Eliminar", color = Color.Red, style = MaterialTheme.typography.bodyLarge)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { ingredienteAEliminar = null }) {
-                    Text("Cancelar")
+                    Text("Cancelar", color = gold, style = MaterialTheme.typography.bodyLarge)
                 }
-            }
+            },
+            containerColor = cardColor
         )
     }
 
@@ -266,10 +302,16 @@ fun GestionarIngredientes(
 
         AlertDialog(
             onDismissRequest = { mostrarDialogoEdicion = false },
-            title = { Text("Editar Ingrediente") },
+            title = { Text("Editar Ingrediente", style = MaterialTheme.typography.titleLarge, color = textColor) },
             text = {
                 Column {
-                    OutlinedTextField(value = nuevoNombre, onValueChange = { nuevoNombre = it }, label = { Text("Nombre") })
+                    OutlinedTextField(
+                        value = nuevoNombre,
+                        onValueChange = { nuevoNombre = it },
+                        label = { Text("Nombre", color = textColor) },
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                     ExposedDropdownMenuBox(
                         expanded = editUnidadExpanded,
                         onExpandedChange = { editUnidadExpanded = !editUnidadExpanded }
@@ -277,10 +319,11 @@ fun GestionarIngredientes(
                         OutlinedTextField(
                             value = nuevaUnidad,
                             onValueChange = {},
-                            label = { Text("Unidad") },
+                            label = { Text("Unidad", color = textColor) },
                             readOnly = true,
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = editUnidadExpanded) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth()
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
                         )
                         ExposedDropdownMenu(
                             expanded = editUnidadExpanded,
@@ -288,7 +331,7 @@ fun GestionarIngredientes(
                         ) {
                             unidades.forEach { option ->
                                 DropdownMenuItem(
-                                    text = { Text(option) },
+                                    text = { Text(option, color = textColor, style = MaterialTheme.typography.bodyLarge) },
                                     onClick = {
                                         nuevaUnidad = option
                                         editUnidadExpanded = false
@@ -297,7 +340,13 @@ fun GestionarIngredientes(
                             }
                         }
                     }
-                    OutlinedTextField(value = nuevoCosto, onValueChange = { nuevoCosto = it }, label = { Text("Costo por unidad") })
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = nuevoCosto,
+                        onValueChange = { nuevoCosto = it },
+                        label = { Text("Costo por unidad", color = textColor) },
+                        shape = RoundedCornerShape(12.dp)
+                    )
                 }
             },
             confirmButton = {
@@ -311,14 +360,15 @@ fun GestionarIngredientes(
                     Toast.makeText(context, "Ingrediente editado", Toast.LENGTH_SHORT).show()
                     mostrarDialogoEdicion = false
                 }) {
-                    Text("Guardar")
+                    Text("Guardar", color = gold, style = MaterialTheme.typography.bodyLarge)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { mostrarDialogoEdicion = false }) {
-                    Text("Cancelar")
+                    Text("Cancelar", color = gold, style = MaterialTheme.typography.bodyLarge)
                 }
-            }
+            },
+            containerColor = cardColor
         )
     }
 }
