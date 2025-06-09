@@ -7,6 +7,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +28,8 @@ import com.example.paneldecontrolreposteria.viewmodel.GeminiViewModel
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.text.TextStyle
 import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -45,6 +48,11 @@ fun AsistenteScreen(
 
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
     var ttsDisponible by remember { mutableStateOf(false) }
+
+    val isDarkTheme = isSystemInDarkTheme()
+    val background = if (isDarkTheme) Color.Black else Color.White
+    val textColor = if (isDarkTheme) Color.White else Color.DarkGray
+    val gold = Color(0xFFC7A449)
 
     LaunchedEffect(activarEscuchaInicial) {
         if (activarEscuchaInicial) {
@@ -84,100 +92,120 @@ fun AsistenteScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(background)
+        .imePadding()
     ) {
-        Text("Asistente Virtual", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        LazyColumn(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(8.dp),
-            reverseLayout = true
+                .fillMaxSize()
+                .padding(bottom = 88.dp)
         ) {
-            items(mensajes.reversed()) { mensaje ->
-                val alignment = if (mensaje.emisor == GeminiViewModel.Emisor.USUARIO) Alignment.CenterEnd else Alignment.CenterStart
-                val backgroundColor = if (mensaje.emisor == GeminiViewModel.Emisor.USUARIO) Color(0xFFD1E8FF) else Color(0xFFE1FFC7)
+            Text(
+                "Asistente Virtual",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = gold,
+                modifier = Modifier
+                    .padding(top = 16.dp, start = 16.dp)
+            )
 
-                Box(
-                    contentAlignment = alignment,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(4.dp)
-                ) {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = backgroundColor),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.widthIn(max = 300.dp)
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 60.dp)
+                    .weight(1f)
+                    .padding(8.dp),
+                reverseLayout = true
+            ) {
+                items(mensajes.reversed()) { mensaje ->
+                    val alignment = if (mensaje.emisor == GeminiViewModel.Emisor.USUARIO) Alignment.End else Alignment.Start
+                    val bgColor = if (mensaje.emisor == GeminiViewModel.Emisor.USUARIO) gold else Color(0xFF444444)
+                    val fgColor = if (mensaje.emisor == GeminiViewModel.Emisor.USUARIO) Color.Black else Color.White
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = if (alignment == Alignment.End) Arrangement.End else Arrangement.Start
                     ) {
-                        Text(
-                            text = mensaje.contenido,
-                            modifier = Modifier.padding(12.dp),
-                            fontSize = 16.sp
-                        )
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = bgColor),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                            modifier = Modifier.widthIn(max = 280.dp)
+                        ) {
+                            Text(
+                                text = mensaje.contenido,
+                                color = fgColor,
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        Column {
-            OutlinedTextField(
-                value = instruccion,
-                onValueChange = { instruccion = it },
-                label = { Text("Escribe tu instrucción") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            if (errorMessage != null) {
                 Text(
-                    text = "Leer respuestas en voz alta",
-                    modifier = Modifier.weight(1f)
-                )
-                Switch(
-                    checked = geminiViewModel.hablarRespuestas,
-                    onCheckedChange = { geminiViewModel.hablarRespuestas = it }
+                    text = "Error: $errorMessage",
+                    color = Color.Red,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
                 )
             }
+        }
 
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .background(background)
+                .padding(16.dp)
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Button(
-                    onClick = {
-                        if (instruccion.isNotBlank()) {
-                            geminiViewModel.procesarYEjecutar(
-                                texto = instruccion,
-                                asistenteController = controller
-                            ) { resultadoFinal ->
-                                if (resultadoFinal.length < 60) {
-                                    Toast.makeText(contexto, resultadoFinal, Toast.LENGTH_LONG).show()
-                                }
-                            }
-                            instruccion = ""
-                        }
-                    },
+                OutlinedTextField(
+                    value = instruccion,
+                    onValueChange = { instruccion = it },
+                    label = { Text("Escribe tu instrucción", color = textColor) },
                     modifier = Modifier.weight(1f),
-                    enabled = instruccion.isNotBlank()
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar")
-                    Spacer(Modifier.width(4.dp))
-                    Text("Enviar")
-                }
+                    textStyle = TextStyle(color = textColor),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = gold,
+                        unfocusedBorderColor = gold,
+                        cursorColor = gold
+                    ),
+                    singleLine = true,
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                if (instruccion.isNotBlank()) {
+                                    geminiViewModel.procesarYEjecutar(
+                                        texto = instruccion,
+                                        asistenteController = controller
+                                    ) { resultadoFinal ->
+                                        if (resultadoFinal.length < 60) {
+                                            Toast.makeText(contexto, resultadoFinal, Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                    instruccion = ""
+                                }
+                            },
+                            enabled = instruccion.isNotBlank()
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Send,
+                                contentDescription = "Enviar",
+                                tint = if (instruccion.isNotBlank()) gold else Color.Gray
+                            )
+                        }
+                    }
+                )
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(8.dp))
 
                 IconButton(
                     onClick = {
@@ -186,24 +214,37 @@ fun AsistenteScreen(
                         speechRecognizerManager.startListening()
                     },
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(54.dp)
                         .background(
-                            if (isListening) Color.Green else MaterialTheme.colorScheme.primary,
+                            if (isListening) Color.Green else gold,
                             shape = CircleShape
                         )
                 ) {
-                    Icon(Icons.Default.Mic, contentDescription = "Hablar", tint = Color.White)
+                    Icon(Icons.Default.Mic, contentDescription = "Hablar", tint = Color.Black)
                 }
             }
-        }
 
-        errorMessage?.let {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Error: $it",
-                color = Color.Red,
-                fontWeight = FontWeight.Bold
-            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Switch(
+                    checked = geminiViewModel.hablarRespuestas,
+                    onCheckedChange = { geminiViewModel.hablarRespuestas = it },
+                    modifier = Modifier.scale(0.8f),
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = gold,
+                        checkedTrackColor = gold.copy(alpha = 0.5f)
+                    )
+                )
+                Text(
+                    "Leer respuestas en voz alta",
+                    modifier = Modifier.padding(start = 8.dp),
+                    color = textColor
+                )
+            }
         }
     }
 

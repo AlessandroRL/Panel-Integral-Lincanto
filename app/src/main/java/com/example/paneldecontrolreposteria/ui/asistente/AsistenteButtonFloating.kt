@@ -7,6 +7,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.isSystemInDarkTheme
 
 @Composable
 fun AsistenteButtonFloating(
@@ -14,10 +16,12 @@ fun AsistenteButtonFloating(
     onMicClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
+    val secondaryVariant = if (isDarkTheme) Color.White else Color(0xFF705852)
     if (currentTabIndex != 2) {
         FloatingActionButton(
             onClick = onMicClick,
-            containerColor = MaterialTheme.colorScheme.primary,
+            containerColor = secondaryVariant,
             contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier = modifier
         ) {

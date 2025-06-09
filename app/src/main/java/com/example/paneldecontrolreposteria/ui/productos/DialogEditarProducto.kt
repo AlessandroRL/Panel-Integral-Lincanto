@@ -55,7 +55,7 @@ fun DialogEditarProducto(
             onDismissRequest = { mostrarEquivalencias = false },
             confirmButton = {
                 TextButton(onClick = { mostrarEquivalencias = false }) {
-                    Text("Cerrar", color = gold)
+                    Text("Cerrar", color = gold, style = MaterialTheme.typography.bodyLarge)
                 }
             },
             title = { Text("Equivalencias comunes", color = textColor, style = MaterialTheme.typography.titleLarge) },
@@ -67,7 +67,8 @@ fun DialogEditarProducto(
                     Text("🫶 1 pizca ≈ 0.3 gramos (solo sólidos)", color = textColor, style = MaterialTheme.typography.bodyLarge)
                 }
             },
-            containerColor = cardColor
+            containerColor = cardColor,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 

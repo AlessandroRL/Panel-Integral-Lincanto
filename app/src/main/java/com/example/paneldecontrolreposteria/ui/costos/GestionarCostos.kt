@@ -5,7 +5,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +22,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -34,14 +38,22 @@ fun GestionarCostos(
     navController: NavController,
     context: Context
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
     var mostrarDialogoPlantilla by remember { mutableStateOf(false) }
     var mostrarDialogoEditar by remember { mutableStateOf(false) }
     var productoEditando by remember { mutableStateOf<ProductoCosto?>(null) }
     var productoSeleccionado by remember { mutableStateOf<ProductoCosto?>(null) }
-    var productoAEliminar by remember { mutableStateOf<ProductoCosto?>(null) } // Estado para el producto a eliminar
+    var productoAEliminar by remember { mutableStateOf<ProductoCosto?>(null) }
 
     val productosCosto by viewModel.productosCosto.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
+
+    val backgroundColor = if (isDarkTheme) Color.Black else Color.White
+    val textColor = if (isDarkTheme) Color.White else Color.DarkGray
+    val cardColor = if (isDarkTheme) Color.DarkGray else Color.White
+    val gold = Color(0xFFC7A449)
+    val secondary = Color(0xFF705852)
+    val secondaryVariant = if (isDarkTheme) Color.White else secondary
 
     LaunchedEffect(Unit) {
         viewModel.cargarProductosCosto()
@@ -52,19 +64,28 @@ fun GestionarCostos(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .background(backgroundColor)
         ) {
             Column(
                 modifier = Modifier
                     .padding(16.dp)
                     .fillMaxSize()
             ) {
-                Text("Gestión de Costos", style = MaterialTheme.typography.headlineMedium)
+                Text(
+                    "Gestión de Costos",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = textColor
+                )
                 Spacer(modifier = Modifier.height(16.dp))
 
                 if (cargando) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                 } else if (productosCosto.isEmpty()) {
-                    Text("No hay productos registrados.")
+                    Text(
+                        "No hay productos registrados.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = textColor
+                    )
                 } else {
                     LazyColumn(
                         modifier = Modifier.weight(1f)
@@ -73,12 +94,17 @@ fun GestionarCostos(
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
+                                    .padding(vertical = 8.dp)
+                                    .border(
+                                        width = 1.dp,
+                                        color = gold,
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
                                     .clickable {
                                         productoSeleccionado = producto
                                     },
-                                shape = RoundedCornerShape(12.dp),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                                colors = CardDefaults.cardColors(containerColor = cardColor),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -87,19 +113,34 @@ fun GestionarCostos(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(producto.nombre, style = MaterialTheme.typography.titleMedium)
-                                        Text("Costo total: $${String.format("%.2f", producto.costoTotal)}")
+                                        Text(
+                                            producto.nombre,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = textColor
+                                        )
+                                        Text(
+                                            "Costo total: $${String.format("%.2f", producto.costoTotal)}",
+                                            color = textColor
+                                        )
                                     }
                                     IconButton(onClick = {
                                         productoEditando = producto
                                         mostrarDialogoEditar = true
                                     }) {
-                                        Icon(Icons.Default.Edit, contentDescription = "Editar")
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = "Editar",
+                                            tint = gold
+                                        )
                                     }
                                     IconButton(onClick = {
                                         productoAEliminar = producto
                                     }) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Eliminar",
+                                            tint = Color.Red
+                                        )
                                     }
                                 }
                             }
@@ -107,13 +148,12 @@ fun GestionarCostos(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Button(
                         onClick = {
@@ -123,12 +163,19 @@ fun GestionarCostos(
                         modifier = Modifier
                             .weight(1f)
                             .height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = secondaryVariant,
+                            contentColor = gold
+                        )
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Nuevo", modifier = Modifier.padding(end = 8.dp))
-                        Text("Desde cero")
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Nuevo",
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text("Desde cero", style = MaterialTheme.typography.bodyLarge)
                     }
 
                     Button(
@@ -136,15 +183,23 @@ fun GestionarCostos(
                         modifier = Modifier
                             .weight(1f)
                             .height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = gold,
+                            contentColor = textColor
+                        )
                     ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = "Plantilla", modifier = Modifier.padding(end = 8.dp))
-                        Text("Desde plantilla")
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = "Plantilla",
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text("Desde plantilla", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             }
+
             AsistenteButtonFloating(
                 currentTabIndex = 0,
                 onMicClick = {
@@ -169,8 +224,20 @@ fun GestionarCostos(
     productoAEliminar?.let { producto ->
         AlertDialog(
             onDismissRequest = { productoAEliminar = null },
-            title = { Text("Eliminar Producto") },
-            text = { Text("¿Estás seguro de que quieres eliminar el producto \"${producto.nombre}\"?") },
+            title = {
+                Text(
+                    "Eliminar Producto",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = textColor
+                )
+            },
+            text = {
+                Text(
+                    "¿Estás seguro de que quieres eliminar el producto \"${producto.nombre}\"?",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = textColor
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -179,14 +246,15 @@ fun GestionarCostos(
                         productoAEliminar = null
                     }
                 ) {
-                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                    Text("Eliminar",style = MaterialTheme.typography.bodyLarge, color = Color.Red)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { productoAEliminar = null }) {
-                    Text("Cancelar")
+                    Text("Cancelar", style = MaterialTheme.typography.bodyLarge, color = gold)
                 }
-            }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 

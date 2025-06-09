@@ -20,6 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavHostController
@@ -108,10 +109,17 @@ fun MainApp(navController: NavHostController) {
                                     "Gestion" -> Icons.Default.ShoppingCart
                                     else -> Icons.Filled.Mic
                                 },
-                                contentDescription = item
+                                contentDescription = item,
                             )
                         },
-                        label = { Text(item) }
+                        label = {
+                            Text(
+                                text = item,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = if (navController.currentDestination?.route == routes[index]) Color.Black else Color.Gray
+                                )
+                            )
+                        }
                     )
                 }
             }

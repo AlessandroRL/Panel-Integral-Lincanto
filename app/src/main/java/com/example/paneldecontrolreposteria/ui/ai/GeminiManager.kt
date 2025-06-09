@@ -321,12 +321,16 @@ class GeminiManager {
                     ?.firstOrNull()
                     ?.text
 
-                return@withContext textoRespuesta ?: "No se recibió respuesta del modelo."
+                return@withContext limpiarTexto(textoRespuesta ?: "No se recibió respuesta del modelo.")
             } else {
                 return@withContext "Error: ${response.code()} ${response.errorBody()?.string()}"
             }
         } catch (e: Exception) {
             return@withContext "Error al conectarse con Gemini: ${e.localizedMessage}"
         }
+    }
+
+    private fun limpiarTexto(texto: String): String {
+        return texto.replace(Regex("[*]"), "")
     }
 }

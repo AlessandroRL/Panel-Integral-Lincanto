@@ -8,6 +8,7 @@ import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -127,7 +128,12 @@ fun GestionarProductos(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = 8.dp)
+                        .border(
+                            width = 1.dp,
+                            color = gold,
+                            shape = RoundedCornerShape(12.dp)
+                        ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
@@ -296,7 +302,8 @@ fun DialogoAgregarProducto(
                     Text("🫶 1 pizca ≈ 0.3 gramos (solo sólidos)", color = textColor, style = MaterialTheme.typography.bodyLarge)
                 }
             },
-            containerColor = cardColor
+            containerColor = cardColor,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 

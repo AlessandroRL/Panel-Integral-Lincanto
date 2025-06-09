@@ -15,12 +15,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun BusquedaIngredientesConLista(
@@ -28,9 +31,11 @@ fun BusquedaIngredientesConLista(
     ingredienteSeleccionado: String,
     onSeleccionarIngrediente: (String) -> Unit
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
     var texto by remember { mutableStateOf(ingredienteSeleccionado) }
     var mostrarLista by remember { mutableStateOf(false) }
     var hizoFocus by remember { mutableStateOf(false) }
+    val textColor = if (isDarkTheme) Color.White else Color.DarkGray
 
     val ingredientesFiltrados = remember(texto, mostrarLista, hizoFocus) {
         if (texto.isBlank() && mostrarLista && hizoFocus) {
@@ -49,6 +54,11 @@ fun BusquedaIngredientesConLista(
             },
             label = { Text("Buscar ingrediente") },
             singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = textColor,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedLabelColor = textColor
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .onFocusChanged { focusState ->

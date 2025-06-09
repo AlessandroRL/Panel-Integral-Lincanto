@@ -21,6 +21,7 @@ import androidx.core.content.ContextCompat
 import com.example.paneldecontrolreposteria.model.Pedido
 import com.example.paneldecontrolreposteria.ui.asistente.AsistenteButtonFloating
 import android.Manifest
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -204,7 +205,12 @@ fun GestionPedidoScreen(navController: NavHostController, viewModel: PedidoViewM
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .border(
+                            width = 1.dp,
+                            color = gold,
+                            shape = RoundedCornerShape(20.dp)
+                        ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
