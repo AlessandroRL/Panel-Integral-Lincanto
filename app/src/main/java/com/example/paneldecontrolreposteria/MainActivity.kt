@@ -18,7 +18,10 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,6 +49,7 @@ import com.example.paneldecontrolreposteria.viewmodel.GeminiViewModel
 import com.example.paneldecontrolreposteria.viewmodel.ProductoViewModel
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.example.paneldecontrolreposteria.screens.PantallaSplashPersonalizada
 
 @Suppress("DEPRECATION")
 class MainActivity : ComponentActivity() {
@@ -85,9 +89,17 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
+            var showSplash by remember { mutableStateOf(true) }
+
             PanelDeControlReposteriaTheme {
-                val navController = rememberNavController()
-                MainApp(navController)
+                if (showSplash) {
+                    PantallaSplashPersonalizada(onTerminar = {
+                        showSplash = false
+                    })
+                } else {
+                    val navController = rememberNavController()
+                    MainApp(navController)
+                }
             }
         }
     }
