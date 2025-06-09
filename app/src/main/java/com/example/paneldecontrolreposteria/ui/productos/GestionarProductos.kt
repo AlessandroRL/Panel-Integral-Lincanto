@@ -7,9 +7,11 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -25,7 +27,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -56,14 +57,19 @@ fun GestionarProductos(
         .filter { it.nombre.contains(textoBusqueda, ignoreCase = true) }
         .sortedBy { it.nombre.lowercase() }
 
-    val scrollState = rememberLazyListState()
+    val isDarkTheme = isSystemInDarkTheme()
+    val backgroundColor = if (isDarkTheme) Color.Black else Color.White
+    val textColor = if (isDarkTheme) Color.White else Color.DarkGray
+    val cardColor = if (isDarkTheme) Color.DarkGray else Color.White
+    val gold = Color(0xFFC7A449)
 
     Scaffold(
+        containerColor = backgroundColor,
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Gestión de Productos") },
-                navigationIcon = {},
-                actions = {}
+            TopAppBar(
+                title = {
+                    Text("Gestión de Productos", style = MaterialTheme.typography.titleLarge, color = textColor) },
+                colors = TopAppBarDefaults.mediumTopAppBarColors(containerColor = backgroundColor, titleContentColor = textColor)
             )
         },
         floatingActionButton = {
@@ -72,8 +78,11 @@ fun GestionarProductos(
                 horizontalAlignment = Alignment.End,
                 modifier = Modifier.padding(end = 16.dp, bottom = 16.dp)
             ) {
-                FloatingActionButton(onClick = { showDialog = true }) {
-                    Icon(Icons.Default.Add, contentDescription = "Agregar Producto")
+                FloatingActionButton(
+                    onClick = { showDialog = true },
+                    containerColor = gold
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Agregar Producto", tint = textColor)
                 }
                 AsistenteButtonFloating(
                     currentTabIndex = 0,
@@ -94,47 +103,47 @@ fun GestionarProductos(
             }
         }
     ) { paddingValues ->
-        LazyColumn(
-            state = scrollState,
-            contentPadding = PaddingValues(
-                top = paddingValues.calculateTopPadding() + 8.dp,
-                bottom = paddingValues.calculateBottomPadding() + 16.dp,
-                start = 16.dp,
-                end = 16.dp
-            ),
-            modifier = Modifier.fillMaxSize()
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
-            item {
-                OutlinedTextField(
-                    value = textoBusqueda,
-                    onValueChange = { textoBusqueda = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    label = { Text("Buscar producto") },
-                    singleLine = true,
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = "Buscar")
-                    }
-                )
-            }
+            OutlinedTextField(
+                value = textoBusqueda,
+                onValueChange = { textoBusqueda = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Buscar producto", color = textColor) },
+                singleLine = true,
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = "Buscar", tint = textColor)
+                },
+                shape = RoundedCornerShape(12.dp)
+            )
 
-            items(productosFiltrados) { producto ->
+            Spacer(modifier = Modifier.height(16.dp))
+
+            productosFiltrados.forEach { producto ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                        .padding(vertical = 8.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = cardColor)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             "🍰 ${producto.nombre}",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.primary
+                            style = MaterialTheme.typography.titleMedium,
+                            color = gold
                         )
 
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
-                        Text("Ingredientes:", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.primary)
+                        Text("Ingredientes:", style = MaterialTheme.typography.titleMedium, color = textColor)
+                        Spacer(modifier = Modifier.height(4.dp))
                         producto.ingredientes.forEachIndexed { index, ingrediente ->
                             val detalle = buildString {
                                 append("${ingrediente.nombre}: ${ingrediente.cantidad} ${ingrediente.unidad}")
@@ -142,31 +151,32 @@ fun GestionarProductos(
                                     append(" (${ingrediente.observacion})")
                                 }
                             }
-                            Text("${index + 1}. $detalle", style = MaterialTheme.typography.bodyMedium)
+                            Text("${index + 1}. $detalle", style = MaterialTheme.typography.bodyMedium, color = textColor)
                         }
 
                         producto.preparacion?.let {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("Preparación:", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.primary)
+                            Text("Preparación:", style = MaterialTheme.typography.titleMedium, color = textColor)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(it, style = MaterialTheme.typography.bodyMedium)
+                            Text(it, style = MaterialTheme.typography.bodyMedium, color = textColor)
                         }
 
                         producto.utensilios?.let {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("Utensilios:", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.primary)
+                            Text("Utensilios:", style = MaterialTheme.typography.titleMedium, color = textColor)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(it.joinToString("\n"), style = MaterialTheme.typography.bodyMedium)
+                            Text(it.joinToString("\n"), style = MaterialTheme.typography.bodyMedium, color = textColor)
                         }
 
                         producto.tips?.let {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("Tips:", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.primary)
+                            Text("Tips:", style = MaterialTheme.typography.titleMedium, color = textColor)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(it, style = MaterialTheme.typography.bodyMedium)
+                            Text(it, style = MaterialTheme.typography.bodyMedium, color = textColor)
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End
@@ -175,62 +185,61 @@ fun GestionarProductos(
                                 productoParaEditar = producto
                                 mostrarDialogoEditar = true
                             }) {
-                                Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar")
+                                Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar", tint = gold)
                             }
                             IconButton(onClick = {
                                 productoAEliminar = producto
                             }) {
-                                Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar")
+                                Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
                             }
                         }
                     }
                 }
             }
         }
+    }
 
-        if (productoAEliminar != null) {
-            AlertDialog(
-                onDismissRequest = { productoAEliminar = null },
-                title = { Text("Eliminar Producto") },
-                text = { Text("¿Estás seguro de que quieres eliminar este producto?") },
-                confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.eliminarProducto(productoAEliminar!!.id)
-                        Toast.makeText(context, "Producto eliminado", Toast.LENGTH_SHORT).show()
-                        productoAEliminar = null
-                    }) {
-                        Text("Eliminar", color = Color.Red)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { productoAEliminar = null }) {
-                        Text("Cancelar")
-                    }
+    if (productoAEliminar != null) {
+        AlertDialog(
+            onDismissRequest = { productoAEliminar = null },
+            title = { Text("Eliminar Producto", style = MaterialTheme.typography.titleLarge, color = textColor) },
+            text = { Text("¿Estás seguro de que quieres eliminar este producto?", color = textColor, style = MaterialTheme.typography.bodyLarge) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.eliminarProducto(productoAEliminar!!.id)
+                    Toast.makeText(context, "Producto eliminado", Toast.LENGTH_SHORT).show()
+                    productoAEliminar = null
+                }) {
+                    Text("Eliminar", color = Color.Red, style = MaterialTheme.typography.bodyLarge)
                 }
-            )
-        }
-
-        val context = LocalContext.current
-
-        if (mostrarDialogoEditar && productoParaEditar != null) {
-            DialogEditarProducto(
-                producto = productoParaEditar!!,
-                onDismiss = { mostrarDialogoEditar = false },
-                onGuardar = { productoEditado ->
-                    viewModel.actualizarProducto(
-                        nombreOriginal = productoParaEditar!!.nombre,
-                        productoEditado = productoEditado
-                    ) { exito ->
-                        if (exito) {
-                            Toast.makeText(context, "Producto actualizado", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, "Error al actualizar", Toast.LENGTH_SHORT).show()
-                        }
-                        mostrarDialogoEditar = false
-                    }
+            },
+            dismissButton = {
+                TextButton(onClick = { productoAEliminar = null }) {
+                    Text("Cancelar", color = gold, style = MaterialTheme.typography.bodyLarge)
                 }
-            )
-        }
+            },
+            containerColor = cardColor
+        )
+    }
+
+    if (mostrarDialogoEditar && productoParaEditar != null) {
+        DialogEditarProducto(
+            producto = productoParaEditar!!,
+            onDismiss = { mostrarDialogoEditar = false },
+            onGuardar = { productoEditado ->
+                viewModel.actualizarProducto(
+                    nombreOriginal = productoParaEditar!!.nombre,
+                    productoEditado = productoEditado
+                ) { exito ->
+                    if (exito) {
+                        Toast.makeText(context, "Producto actualizado", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Error al actualizar el producto", Toast.LENGTH_SHORT).show()
+                    }
+                    mostrarDialogoEditar = false
+                }
+            }
+        )
     }
 
     if (showDialog) {
@@ -263,47 +272,56 @@ fun DialogoAgregarProducto(
     var utensiliosTexto by remember { mutableStateOf("") }
     var tips by remember { mutableStateOf("") }
     var mostrarEquivalencias by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    val isDarkTheme = isSystemInDarkTheme()
+    val textColor = if (isDarkTheme) Color.White else Color.DarkGray
+    val cardColor = if (isDarkTheme) Color.DarkGray else Color.White
+    val gold = Color(0xFFC7A449)
 
     if (mostrarEquivalencias) {
         AlertDialog(
             onDismissRequest = { mostrarEquivalencias = false },
             confirmButton = {
                 TextButton(onClick = { mostrarEquivalencias = false }) {
-                    Text("Cerrar")
+                    Text("Cerrar", color = gold, style = MaterialTheme.typography.bodyLarge)
                 }
             },
-            title = { Text("Equivalencias comunes") },
+            title = { Text("Equivalencias comunes", color = textColor, style = MaterialTheme.typography.titleLarge) },
             text = {
                 Column {
-                    Text("🥄 1 cucharada = 15 ml (líquido) / 10-12 gr (sólido)")
-                    Text("🧂 1 cucharadita = 5 ml (líquido) / 3-5 gr (sólido)")
-                    Text("🍵 1 taza = 240 ml (líquido) / 120-130 gr (harina/azúcar)")
-                    Text("🫶 1 pizca ≈ 0.3 gramos (solo sólidos)")
+                    Text("🥄 1 cucharada = 15 ml (líquido) / 10-12 gr (sólido)", color = textColor, style = MaterialTheme.typography.bodyLarge)
+                    Text("🧂 1 cucharadita = 5 ml (líquido) / 3-5 gr (sólido)", color = textColor, style = MaterialTheme.typography.bodyLarge)
+                    Text("🍵 1 taza = 240 ml (líquido) / 120-130 gr (harina/azúcar)", color = textColor, style = MaterialTheme.typography.bodyLarge)
+                    Text("🫶 1 pizca ≈ 0.3 gramos (solo sólidos)", color = textColor, style = MaterialTheme.typography.bodyLarge)
                 }
-            }
+            },
+            containerColor = cardColor
         )
     }
 
     if (ingredienteAEliminar != null) {
         AlertDialog(
             onDismissRequest = { ingredienteAEliminar = null },
-            title = { Text("Eliminar Ingrediente") },
-            text = { Text("¿Estás seguro de que quieres eliminar este ingrediente?") },
+            title = { Text("Eliminar Ingrediente", color = textColor, style = MaterialTheme.typography.titleLarge) },
+            text = { Text("¿Estás seguro de que quieres eliminar este ingrediente?", color = textColor, style = MaterialTheme.typography.bodyLarge) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         ingredientes.remove(ingredienteAEliminar)
                         ingredienteAEliminar = null
+                        Toast.makeText(context, "Ingrediente eliminado", Toast.LENGTH_SHORT).show()
                     }
                 ) {
-                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                    Text("Eliminar", color = Color.Red, style = MaterialTheme.typography.bodyLarge)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { ingredienteAEliminar = null }) {
-                    Text("Cancelar")
+                    Text("Cancelar", color = gold, style = MaterialTheme.typography.bodyLarge)
                 }
-            }
+            },
+            containerColor = cardColor
         )
     }
 
@@ -326,29 +344,39 @@ fun DialogoAgregarProducto(
                     )
                     onAgregar(producto)
                     onDismiss()
-                }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = gold),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Agregar")
+                Text("Agregar", color = textColor, style = MaterialTheme.typography.bodyLarge)
             }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text("Cancelar")
+            OutlinedButton(
+                onClick = onDismiss,
+                border = BorderStroke(1.dp, Color.Red),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Cancelar", color = Color.Red, style = MaterialTheme.typography.bodyLarge)
             }
         },
-        title = { Text("Nuevo Producto") },
+        title = { Text("Nuevo Producto", color = textColor, style = MaterialTheme.typography.titleLarge) },
         text = {
             Box {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     OutlinedTextField(
                         value = nombre,
                         onValueChange = { nombre = it },
-                        label = { Text("Nombre (usa guión si es subproducto)") },
-                        singleLine = true
+                        label = { Text("Nombre", color = textColor) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(16.dp))
 
-                    Text("Ingredientes del Producto", style = MaterialTheme.typography.titleMedium)
+                    Text("Ingredientes del Producto", style = MaterialTheme.typography.titleMedium, color = textColor)
+
+                    Spacer(Modifier.height(8.dp))
 
                     ingredientes.forEachIndexed { index, ingrediente ->
                         BusquedaIngredientesConLista(
@@ -366,6 +394,8 @@ fun DialogoAgregarProducto(
                             }
                         )
 
+                        Spacer(Modifier.height(8.dp))
+
                         var expandedUnidad by remember { mutableStateOf(false) }
 
                         ExposedDropdownMenuBox(
@@ -379,11 +409,12 @@ fun DialogoAgregarProducto(
                                 value = ingrediente.unidad,
                                 onValueChange = {},
                                 readOnly = true,
-                                label = { Text("Unidad") },
+                                label = { Text("Unidad", color = textColor) },
                                 trailingIcon = {
                                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedUnidad)
                                 },
-                                modifier = Modifier.menuAnchor()
+                                modifier = Modifier.menuAnchor(),
+                                shape = RoundedCornerShape(12.dp)
                             )
                             ExposedDropdownMenu(
                                 expanded = expandedUnidad,
@@ -391,7 +422,7 @@ fun DialogoAgregarProducto(
                             ) {
                                 unidadesDisponibles.forEach { unidad ->
                                     DropdownMenuItem(
-                                        text = { Text(unidad) },
+                                        text = { Text(unidad, color = textColor, style = MaterialTheme.typography.bodyLarge) },
                                         onClick = {
                                             ingredientes[index] = ingrediente.copy(unidad = unidad)
                                             expandedUnidad = false
@@ -401,70 +432,82 @@ fun DialogoAgregarProducto(
                             }
                         }
 
+                        Spacer(Modifier.height(8.dp))
+
                         OutlinedTextField(
                             value = if (ingrediente.cantidad == 0.0) "" else ingrediente.cantidad.toString(),
                             onValueChange = {
-                                val nuevaCantidad = it.toDoubleOrNull() ?: 0.0
-                                ingredientes[index] = ingrediente.copy(cantidad = nuevaCantidad)
+                                ingredientes[index] = ingrediente.copy(cantidad = it.toDoubleOrNull() ?: 0.0)
                             },
-                            label = { Text("Cantidad") },
+                            label = { Text("Cantidad", color = textColor) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp)
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
                         )
+
+                        Spacer(Modifier.height(8.dp))
 
                         OutlinedTextField(
                             value = ingrediente.observacion ?: "",
                             onValueChange = {
-                                ingredientes[index] = ingrediente.copy(observacion = it.ifBlank { null })
+                                ingredientes[index] = ingrediente.copy(observacion = it)
                             },
-                            label = { Text("Observación (opcional)") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp)
+                            label = { Text("Observación (opcional)", color = textColor) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
                         )
-
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End
                         ) {
                             IconButton(onClick = { ingredienteAEliminar = ingrediente }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
                             }
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Spacer(Modifier.height(12.dp))
                     }
 
                     Button(
                         onClick = {
-                            ingredientes.add(IngredienteDetalle())
+                            ingredientes.add(IngredienteDetalle(nombre = "", cantidad = 0.0, unidad = ""))
                         },
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        colors = ButtonDefaults.buttonColors(containerColor = gold),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Añadir nuevo ingrediente")
+                        Text("Añadir nuevo ingrediente", color = textColor, style = MaterialTheme.typography.bodyLarge)
                     }
 
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(
                         value = preparacion,
                         onValueChange = { preparacion = it },
-                        label = { Text("Preparación (opcional)") },
-                        modifier = Modifier.height(120.dp)
+                        label = { Text("Preparación (opcional)", color = textColor) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        shape = RoundedCornerShape(12.dp)
                     )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = utensiliosTexto,
                         onValueChange = { utensiliosTexto = it },
-                        label = { Text("Utensilios (uno por línea, opcional)") },
-                        modifier = Modifier.height(100.dp)
+                        label = { Text("Utensilios (uno por línea, opcional)", color = textColor) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp),
+                        shape = RoundedCornerShape(12.dp)
                     )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = tips,
                         onValueChange = { tips = it },
-                        label = { Text("Tips (opcional)") },
-                        modifier = Modifier.height(80.dp)
+                        label = { Text("Tips (opcional)", color = textColor) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp),
+                        shape = RoundedCornerShape(12.dp)
                     )
                     Spacer(Modifier.height(32.dp))
                 }
@@ -474,11 +517,12 @@ fun DialogoAgregarProducto(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(8.dp),
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    containerColor = gold
                 ) {
-                    Icon(Icons.Default.Info, contentDescription = "Equivalencias")
+                    Icon(Icons.Default.Info, contentDescription = "Equivalencias", tint = textColor)
                 }
             }
-        }
+        },
+        containerColor = cardColor
     )
 }
