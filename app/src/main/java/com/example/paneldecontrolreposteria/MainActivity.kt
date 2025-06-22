@@ -3,8 +3,9 @@ package com.example.paneldecontrolreposteria
 import com.example.paneldecontrolreposteria.screens.EditarPedidoScreen
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -40,6 +41,7 @@ import com.example.paneldecontrolreposteria.viewmodel.IngredienteViewModel
 import com.example.paneldecontrolreposteria.viewmodel.PedidoViewModel
 import kotlin.io.encoding.ExperimentalEncodingApi
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.paneldecontrolreposteria.ui.asistente.AsistenteController
@@ -54,7 +56,7 @@ import com.example.paneldecontrolreposteria.screens.PantallaSplashPersonalizada
 @Suppress("DEPRECATION")
 class MainActivity : ComponentActivity() {
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresApi(value = 36)
     @OptIn(ExperimentalEncodingApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -88,6 +90,29 @@ class MainActivity : ComponentActivity() {
             requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
 
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                1001
+            )
+        }
+
+        val canal = NotificationChannel(
+            "pedidos_channel",
+            "Notificaciones de pedidos",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Canal para recordar pedidos programados"
+        }
+
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        manager.createNotificationChannel(canal)
+
         setContent {
             var showSplash by remember { mutableStateOf(true) }
 
@@ -106,7 +131,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @SuppressLint("StateFlowValueCalledInComposition")
-@RequiresApi(Build.VERSION_CODES.O)
+@RequiresApi(value = 36)
 @Composable
 fun MainApp(navController: NavHostController) {
     val items = listOf("Pedidos", "Gestion", "Asistente")

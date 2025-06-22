@@ -1,6 +1,7 @@
 package com.example.paneldecontrolreposteria.screens
 
 import android.annotation.SuppressLint
+import android.app.AlarmManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,7 +15,9 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.DropdownMenuItem
 import android.app.DatePickerDialog
+import android.content.Context
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -22,13 +25,19 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.example.paneldecontrolreposteria.model.ProductoPedido
+import com.example.paneldecontrolreposteria.ui.notificaciones.AgregarNotificacionUI
+import com.example.paneldecontrolreposteria.ui.notificaciones.PermissionManager
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 
+@RequiresApi(value = 36)
 @SuppressLint("MutableCollectionMutableState", "DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +58,9 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
     var expanded by remember { mutableStateOf(false) }
     var productoAEliminar by remember { mutableStateOf<ProductoSeleccionado?>(null) }
     val context = LocalContext.current
+
+    val fechasNotificacion = remember { mutableStateListOf<LocalDateTime>() }
+    var mostrarDialogoNotificacion by remember { mutableStateOf(false) }
 
     val backgroundColor = if (isDarkTheme) Color.Black else Color.White
     val textColor = if (isDarkTheme) Color.White else Color.DarkGray
@@ -210,6 +222,31 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
                         isError = errorMensaje != null && fechaLimite.isBlank()
                     )
 
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text("Fechas de notificación", style = MaterialTheme.typography.titleSmall)
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Button(onClick = { mostrarDialogoNotificacion = true }, colors = ButtonDefaults.buttonColors(containerColor = gold)) {
+                        Icon(Icons.Default.Add, contentDescription = "Agregar", tint = textColor)
+                        Spacer(Modifier.width(4.dp))
+                        Text("Agregar notificación", color = textColor)
+                    }
+
+                    fechasNotificacion.forEach { fecha ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        ) {
+                            Text("📅 ${fecha.format(DateTimeFormatter.ofPattern("dd/MM/yyyy h:mm a"))}")
+                            IconButton(onClick = { fechasNotificacion.remove(fecha) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
+                            }
+                        }
+                    }
+
                     if (errorMensaje != null) {
                         Text(errorMensaje!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
                     }
@@ -241,9 +278,18 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
                                             productos = productosSeleccionados.map {
                                                 ProductoPedido(it.nombre, it.cantidad.toInt(), it.tamano.toInt())
                                             },
-                                            fechaLimite = fechaLimite
+                                            fechaLimite = fechaLimite,
+                                            notificaciones = fechasNotificacion.map { it.toString() }
                                         )
                                         viewModel.agregarPedido(nuevoPedido)
+
+                                        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                                        if (!alarmManager.canScheduleExactAlarms()) {
+                                            PermissionManager.solicitarPermisoAlarmasExactas(context)
+                                            return@launch
+                                        }
+
+                                        viewModel.programarNotificacion(context, nuevoPedido)
                                         Toast.makeText(context, "Pedido agregado", Toast.LENGTH_SHORT).show()
                                         onPedidoAgregado()
                                     } catch (e: Exception) {
@@ -260,6 +306,26 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
                 }
             }
         }
+    }
+
+    if (mostrarDialogoNotificacion) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogoNotificacion = false },
+            confirmButton = {},
+            title = null,
+            text = {
+                AgregarNotificacionUI(
+                    onGuardar = {
+                        fechasNotificacion.add(it)
+                        mostrarDialogoNotificacion = false
+                    },
+                    onCancelar = {
+                        mostrarDialogoNotificacion = false
+                    }
+                )
+            },
+            containerColor = cardColor
+        )
     }
 
     if (productoAEliminar != null) {

@@ -1,13 +1,25 @@
 package com.example.paneldecontrolreposteria.viewmodel
 
+import android.annotation.SuppressLint
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.paneldecontrolreposteria.model.Pedido
+import com.example.paneldecontrolreposteria.receiver.NotificacionReceiver
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import com.google.firebase.firestore.FirebaseFirestore
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 class PedidoViewModel : ViewModel() {
     private val repository = PedidoRepository()
@@ -29,6 +41,7 @@ class PedidoViewModel : ViewModel() {
                 val listaPedidos = result.documents.mapNotNull { doc ->
                     val pedido = doc.toObject(Pedido::class.java)
                     pedido?.id = doc.id
+                    pedido?.let { limpiarNotificacionesExpiradas(it) }
                     Log.d("PedidoViewModel", "Pedido obtenido: ${pedido?.id}")
                     pedido
                 }
@@ -80,5 +93,62 @@ class PedidoViewModel : ViewModel() {
                 onResultado(emptyList())
             }
         }
+    }
+
+    @SuppressLint("ScheduleExactAlarm")
+    @RequiresPermission(value = "android.permission.SCHEDULE_EXACT_ALARM", conditional = true)
+    @RequiresApi(Build.VERSION_CODES.M)
+    fun programarNotificacion(context: Context, pedido: Pedido) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        val pedidoLimpio = limpiarNotificacionesExpiradas(pedido)
+
+        pedidoLimpio.notificaciones.forEachIndexed { index, fechaStr ->
+            try {
+                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+                val fecha = LocalDateTime.parse(fechaStr, formatter)
+
+                val intent = Intent(context, NotificacionReceiver::class.java).apply {
+                    putExtra("titulo", "📦 Pedido para ${pedido.cliente}")
+                    putExtra("mensaje", "Este pedido vence el ${pedido.fechaLimite}")
+                }
+
+                val pendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    pedido.id.hashCode() + index,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+
+                val triggerTime = fecha
+                    .atZone(ZoneId.systemDefault())
+                    .toInstant()
+                    .toEpochMilli()
+
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerTime,
+                    pendingIntent
+                )
+            } catch (e: Exception) {
+                Log.e("Notificacion", "Error al parsear fecha de notificación: $fechaStr", e)
+            }
+        }
+    }
+
+    fun limpiarNotificacionesExpiradas(pedido: Pedido): Pedido {
+        val ahora = LocalDateTime.now()
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+
+        val notificacionesValidas = pedido.notificaciones.filter {
+            try {
+                val fecha = LocalDateTime.parse(it, formatter)
+                fecha.isAfter(ahora)
+            } catch (_: Exception) {
+                false
+            }
+        }
+
+        return pedido.copy(notificaciones = notificacionesValidas)
     }
 }

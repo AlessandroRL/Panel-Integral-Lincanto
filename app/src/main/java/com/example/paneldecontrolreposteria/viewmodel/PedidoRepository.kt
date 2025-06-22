@@ -30,7 +30,8 @@ class PedidoRepository {
                     )
                 },
                 "estado" to pedido.estado,
-                "fechaLimite" to pedido.fechaLimite
+                "fechaLimite" to pedido.fechaLimite,
+                "notificaciones" to pedido.notificaciones
             )
 
             db.collection("pedidos")
