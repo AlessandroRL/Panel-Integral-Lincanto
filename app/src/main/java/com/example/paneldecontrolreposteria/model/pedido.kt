@@ -15,5 +15,5 @@ data class Pedido(
     val productos: List<ProductoPedido> = listOf(),
     var estado: String = "Pendiente",
     var fechaLimite: String = "",
-    val notificaciones: List<String> = emptyList()
+    var notificaciones: List<String> = emptyList()
 )

@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -86,181 +87,213 @@ fun GestionarIngredientes(
     var ingredienteAEliminar by remember { mutableStateOf<Ingrediente?>(null) }
 
     val isDarkTheme = isSystemInDarkTheme()
+    val backgroundColor = if (isDarkTheme) Color.Black else Color.White
     val textColor = if (isDarkTheme) Color.White else Color.DarkGray
     val cardColor = if (isDarkTheme) Color.DarkGray else Color.White
     val gold = Color(0xFFC7A449)
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text(
-            "Registrar Ingrediente",
-            style = MaterialTheme.typography.titleLarge,
-            color = textColor
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = nombre,
-            onValueChange = { nombre = it },
-            label = { Text("Nombre", color = textColor) },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        ExposedDropdownMenuBox(
-            expanded = unidadExpanded,
-            onExpandedChange = { unidadExpanded = !unidadExpanded }
+    Scaffold(containerColor = backgroundColor) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .background(backgroundColor)
         ) {
+            Text(
+                "Registrar Ingrediente",
+                style = MaterialTheme.typography.titleLarge,
+                color = textColor
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             OutlinedTextField(
-                value = unidad,
-                onValueChange = {},
-                label = { Text("Unidad", color = textColor) },
-                readOnly = true,
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unidadExpanded) },
-                modifier = Modifier
-                    .menuAnchor()
-                    .fillMaxWidth(),
+                value = nombre,
+                onValueChange = { nombre = it },
+                label = { Text("Nombre", color = textColor) },
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
-            ExposedDropdownMenu(
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            ExposedDropdownMenuBox(
                 expanded = unidadExpanded,
-                onDismissRequest = { unidadExpanded = false }
+                onExpandedChange = { unidadExpanded = !unidadExpanded }
             ) {
-                unidades.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(option, color = textColor, style = MaterialTheme.typography.bodyLarge) },
-                        onClick = {
-                            unidad = option
-                            unidadExpanded = false
-                        }
-                    )
+                OutlinedTextField(
+                    value = unidad,
+                    onValueChange = {},
+                    label = { Text("Unidad", color = textColor) },
+                    readOnly = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unidadExpanded) },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                ExposedDropdownMenu(
+                    expanded = unidadExpanded,
+                    onDismissRequest = { unidadExpanded = false }
+                ) {
+                    unidades.forEach { option ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    option,
+                                    color = textColor,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            },
+                            onClick = {
+                                unidad = option
+                                unidadExpanded = false
+                            }
+                        )
+                    }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(
-            value = costoUnidad,
-            onValueChange = { costoUnidad = it },
-            label = { Text("Costo por unidad", color = textColor) },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Button(
-                onClick = {
-                    if (nombre.isNotBlank() && unidad.isNotBlank() && costoUnidad.toDoubleOrNull() != null) {
-                        val nuevo = Ingrediente(
-                            nombre = nombre,
-                            unidad = unidad,
-                            costoUnidad = costoUnidad.toDouble()
-                        )
-                        viewModel.agregarIngrediente(nuevo)
-                        Toast.makeText(context, "Ingrediente agregado", Toast.LENGTH_SHORT).show()
-                        nombre = ""
-                        unidad = ""
-                        costoUnidad = ""
-                    } else {
-                        Toast.makeText(context, "Por favor, complete todos los campos", Toast.LENGTH_SHORT).show()
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = gold),
+            OutlinedTextField(
+                value = costoUnidad,
+                onValueChange = { costoUnidad = it },
+                label = { Text("Costo por unidad", color = textColor) },
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Guardar Ingrediente", color = textColor, style = MaterialTheme.typography.bodyLarge)
-            }
-
-            AsistenteButtonFloating(
-                currentTabIndex = 0,
-                onMicClick = {
-                    if (ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.RECORD_AUDIO
-                        ) == PackageManager.PERMISSION_GRANTED
-                    ) {
-                        Toast.makeText(context, "🎤 Escuchando...", Toast.LENGTH_SHORT).show()
-                        navController.navigate("asistenteVirtual?activarEscuchaInicial=true")
-                    } else {
-                        Toast.makeText(context, "Permiso de grabación no concedido", Toast.LENGTH_SHORT).show()
-                    }
-                },
-                modifier = Modifier
             )
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        HorizontalDivider(color = textColor)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            "Ingredientes Registrados",
-            style = MaterialTheme.typography.titleMedium,
-            color = textColor
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = textoBusqueda,
-            onValueChange = { viewModel.actualizarBusqueda(it) },
-            label = { Text("Buscar por nombre", color = textColor) },
-            modifier = Modifier.fillMaxWidth(),
-            leadingIcon = {
-                Icon(Icons.Default.Search, contentDescription = "Buscar", tint = textColor)
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        LazyColumn {
-            items(ingredientesFiltrados) { ingrediente ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = cardColor),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = {
+                        if (nombre.isNotBlank() && unidad.isNotBlank() && costoUnidad.toDoubleOrNull() != null) {
+                            val nuevo = Ingrediente(
+                                nombre = nombre,
+                                unidad = unidad,
+                                costoUnidad = costoUnidad.toDouble()
+                            )
+                            viewModel.agregarIngrediente(nuevo)
+                            Toast.makeText(context, "Ingrediente agregado", Toast.LENGTH_SHORT)
+                                .show()
+                            nombre = ""
+                            unidad = ""
+                            costoUnidad = ""
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Por favor, complete todos los campos",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = gold),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text("Nombre: ${ingrediente.nombre}", color = textColor)
-                            Text("Unidad: ${ingrediente.unidad}", color = textColor)
-                            Text("Costo: ${ingrediente.costoUnidad}", color = textColor)
+                    Text(
+                        "Guardar Ingrediente",
+                        color = textColor,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+
+                AsistenteButtonFloating(
+                    currentTabIndex = 0,
+                    onMicClick = {
+                        if (ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.RECORD_AUDIO
+                            ) == PackageManager.PERMISSION_GRANTED
+                        ) {
+                            Toast.makeText(context, "🎤 Escuchando...", Toast.LENGTH_SHORT).show()
+                            navController.navigate("asistenteVirtual?activarEscuchaInicial=true")
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Permiso de grabación no concedido",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
-                        Row {
-                            IconButton(onClick = {
-                                ingredienteAEditar = ingrediente
-                                mostrarDialogoEdicion = true
-                            }) {
-                                Icon(Icons.Default.Edit, contentDescription = "Editar", tint = gold)
+                    },
+                    modifier = Modifier
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            HorizontalDivider(color = textColor)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                "Ingredientes Registrados",
+                style = MaterialTheme.typography.titleMedium,
+                color = textColor
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = textoBusqueda,
+                onValueChange = { viewModel.actualizarBusqueda(it) },
+                label = { Text("Buscar por nombre", color = textColor) },
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = "Buscar", tint = textColor)
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            LazyColumn {
+                items(ingredientesFiltrados) { ingrediente ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        colors = CardDefaults.cardColors(containerColor = cardColor),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("Nombre: ${ingrediente.nombre}", color = textColor)
+                                Text("Unidad: ${ingrediente.unidad}", color = textColor)
+                                Text("Costo: ${ingrediente.costoUnidad}", color = textColor)
                             }
-                            IconButton(onClick = {
-                                ingredienteAEliminar = ingrediente
-                            }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
+                            Row {
+                                IconButton(onClick = {
+                                    ingredienteAEditar = ingrediente
+                                    mostrarDialogoEdicion = true
+                                }) {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = "Editar",
+                                        tint = gold
+                                    )
+                                }
+                                IconButton(onClick = {
+                                    ingredienteAEliminar = ingrediente
+                                }) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Eliminar",
+                                        tint = Color.Red
+                                    )
+                                }
                             }
                         }
                     }

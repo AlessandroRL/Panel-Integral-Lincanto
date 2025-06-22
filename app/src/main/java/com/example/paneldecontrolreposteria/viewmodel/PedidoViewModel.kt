@@ -38,13 +38,35 @@ class PedidoViewModel : ViewModel() {
     fun obtenerPedidos() {
         firestore.collection("pedidos").get()
             .addOnSuccessListener { result ->
+                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+                val ahora = LocalDateTime.now()
+
                 val listaPedidos = result.documents.mapNotNull { doc ->
                     val pedido = doc.toObject(Pedido::class.java)
                     pedido?.id = doc.id
-                    pedido?.let { limpiarNotificacionesExpiradas(it) }
+
+                    val notificacionesFiltradas = pedido?.notificaciones?.mapNotNull {
+                        try {
+                            val fecha = LocalDateTime.parse(it, formatter)
+                            if (fecha.isAfter(ahora)) it else null
+                        } catch (_: Exception) {
+                            null
+                        }
+                    } ?: emptyList()
+
+                    if (pedido != null && notificacionesFiltradas.size != pedido.notificaciones.size) {
+                        firestore.collection("pedidos").document(pedido.id)
+                            .update("notificaciones", notificacionesFiltradas)
+                            .addOnFailureListener { e ->
+                                Log.e("PedidoViewModel", "Error al limpiar notificaciones vencidas: ${e.message}")
+                            }
+                        pedido.notificaciones = notificacionesFiltradas
+                    }
+
                     Log.d("PedidoViewModel", "Pedido obtenido: ${pedido?.id}")
                     pedido
                 }
+
                 _pedidos.value = listaPedidos
             }
             .addOnFailureListener { e ->

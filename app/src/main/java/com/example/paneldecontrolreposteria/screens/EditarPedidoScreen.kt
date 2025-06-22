@@ -57,6 +57,7 @@ fun EditarPedidoScreen(
     var productosDisponibles by remember { mutableStateOf<List<String>>(emptyList()) }
     var productoAEliminar by remember { mutableStateOf<ProductoPedido?>(null) }
 
+    var notificacionAEliminar by remember { mutableStateOf<LocalDateTime?>(null) }
     val fechasNotificacion = remember {
         mutableStateListOf<LocalDateTime>().apply {
             addAll(pedido.notificaciones.mapNotNull {
@@ -220,18 +221,31 @@ fun EditarPedidoScreen(
                     Button(onClick = { mostrarDialogoNotificacion = true }, colors = ButtonDefaults.buttonColors(containerColor = gold)) {
                         Icon(Icons.Default.Add, contentDescription = "Agregar", tint = textColor)
                         Spacer(Modifier.width(4.dp))
-                        Text("Agregar notificación", color = textColor)
+                        Text("Agregar notificación", color = textColor, style = MaterialTheme.typography.bodyLarge)
                     }
 
                     fechasNotificacion.forEach { fecha ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 0.dp)
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = gold)
                         ) {
-                            Text("📅 ${fecha.format(DateTimeFormatter.ofPattern("dd/MM/yyyy h:mm a"))}")
-                            IconButton(onClick = { fechasNotificacion.remove(fecha) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
+                            Row(
+                                modifier = Modifier
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    "📅 ${fecha.format(DateTimeFormatter.ofPattern("dd/MM/yyyy h:mm a"))}",
+                                    modifier = Modifier.weight(1f),
+                                    color = textColor
+                                )
+                                IconButton(onClick = { notificacionAEliminar = fecha }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
+                                }
                             }
                         }
                     }
@@ -319,6 +333,31 @@ fun EditarPedidoScreen(
                 }
             },
             containerColor = cardColor
+        )
+    }
+
+    if (notificacionAEliminar != null) {
+        AlertDialog(
+            onDismissRequest = { notificacionAEliminar = null },
+            title = { Text("Eliminar Notificación", style = MaterialTheme.typography.titleLarge) },
+            text = { Text("¿Estás seguro de que quieres eliminar esta notificación?",
+                color = textColor,
+                style = MaterialTheme.typography.bodyLarge
+            ) },
+            confirmButton = {
+                TextButton(onClick = {
+                    fechasNotificacion.remove(notificacionAEliminar)
+                    notificacionAEliminar = null
+                    Toast.makeText(context, "Notificación eliminada", Toast.LENGTH_SHORT).show()
+                }) {
+                    Text("Eliminar", color = Color.Red, style = MaterialTheme.typography.bodyLarge)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { notificacionAEliminar = null }) {
+                    Text("Cancelar", color = gold, style = MaterialTheme.typography.bodyLarge)
+                }
+            }
         )
     }
 
