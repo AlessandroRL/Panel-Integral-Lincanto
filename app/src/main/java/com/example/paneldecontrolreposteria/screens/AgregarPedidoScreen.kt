@@ -62,6 +62,7 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
     var notificacionAEliminar by remember { mutableStateOf<LocalDateTime?>(null) }
     val fechasNotificacion = remember { mutableStateListOf<LocalDateTime>() }
     var mostrarDialogoNotificacion by remember { mutableStateOf(false) }
+    var notificacionSeleccionadaParaEdicion by remember { mutableStateOf<LocalDateTime?>(null) }
 
     val backgroundColor = if (isDarkTheme) Color.Black else Color.White
     val textColor = if (isDarkTheme) Color.White else Color.DarkGray
@@ -239,13 +240,16 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 8.dp)
+                                .clickable {
+                                    notificacionSeleccionadaParaEdicion = fecha
+                                    mostrarDialogoNotificacion = true
+                                },
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = gold)
                         ) {
                             Row(
-                                modifier = Modifier
-                                    .padding(12.dp),
+                                modifier = Modifier.padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
@@ -254,7 +258,7 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
                                     modifier = Modifier.weight(1f),
                                     color = textColor
                                 )
-                                IconButton(onClick = { notificacionAEliminar = fecha }) {
+                                IconButton(onClick = { fechasNotificacion.remove(fecha) }) {
                                     Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
                                 }
                             }
@@ -323,22 +327,21 @@ fun AgregarPedidoScreen(viewModel: PedidoViewModel, onPedidoAgregado: () -> Unit
     }
 
     if (mostrarDialogoNotificacion) {
-        AlertDialog(
-            onDismissRequest = { mostrarDialogoNotificacion = false },
-            confirmButton = {},
-            title = null,
-            text = {
-                AgregarNotificacionUI(
-                    onGuardar = {
-                        fechasNotificacion.add(it)
-                        mostrarDialogoNotificacion = false
-                    },
-                    onCancelar = {
-                        mostrarDialogoNotificacion = false
-                    }
-                )
+        AgregarNotificacionUI(
+            onGuardar = { nuevaFecha ->
+                if (notificacionSeleccionadaParaEdicion != null) {
+                    fechasNotificacion[fechasNotificacion.indexOf(notificacionSeleccionadaParaEdicion!!)] = nuevaFecha
+                } else {
+                    fechasNotificacion.add(nuevaFecha)
+                }
+                notificacionSeleccionadaParaEdicion = null
+                mostrarDialogoNotificacion = false
             },
-            containerColor = cardColor
+            onCancelar = {
+                notificacionSeleccionadaParaEdicion = null
+                mostrarDialogoNotificacion = false
+            },
+            fechaInicial = notificacionSeleccionadaParaEdicion
         )
     }
 

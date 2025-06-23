@@ -70,6 +70,7 @@ fun EditarPedidoScreen(
         }
     }
     var mostrarDialogoNotificacion by remember { mutableStateOf(false) }
+    var notificacionSeleccionadaParaEdicion by remember { mutableStateOf<LocalDateTime?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.obtenerNombresProductos { productos ->
@@ -228,13 +229,16 @@ fun EditarPedidoScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 8.dp)
+                                .clickable {
+                                    notificacionSeleccionadaParaEdicion = fecha
+                                    mostrarDialogoNotificacion = true
+                                },
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = gold)
                         ) {
                             Row(
-                                modifier = Modifier
-                                    .padding(12.dp),
+                                modifier = Modifier.padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
@@ -243,7 +247,7 @@ fun EditarPedidoScreen(
                                     modifier = Modifier.weight(1f),
                                     color = textColor
                                 )
-                                IconButton(onClick = { notificacionAEliminar = fecha }) {
+                                IconButton(onClick = { fechasNotificacion.remove(fecha) }) {
                                     Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red)
                                 }
                             }
@@ -363,13 +367,20 @@ fun EditarPedidoScreen(
 
     if (mostrarDialogoNotificacion) {
         AgregarNotificacionUI(
-            onGuardar = {
-                fechasNotificacion.add(it)
+            onGuardar = { nuevaFecha ->
+                if (notificacionSeleccionadaParaEdicion != null) {
+                    fechasNotificacion[fechasNotificacion.indexOf(notificacionSeleccionadaParaEdicion!!)] = nuevaFecha
+                } else {
+                    fechasNotificacion.add(nuevaFecha)
+                }
+                notificacionSeleccionadaParaEdicion = null
                 mostrarDialogoNotificacion = false
             },
             onCancelar = {
+                notificacionSeleccionadaParaEdicion = null
                 mostrarDialogoNotificacion = false
-            }
+            },
+            fechaInicial = notificacionSeleccionadaParaEdicion
         )
     }
 }

@@ -5,9 +5,11 @@ import android.app.TimePickerDialog
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,19 +26,20 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun AgregarNotificacionUI(
     onGuardar: (LocalDateTime) -> Unit,
-    onCancelar: () -> Unit
+    onCancelar: () -> Unit,
+    fechaInicial: LocalDateTime? = null
 ) {
     val isDarkTheme = isSystemInDarkTheme()
-    val backgroundColor = if (isDarkTheme) Color.Black else Color.White
     val textColor = if (isDarkTheme) Color.White else Color.DarkGray
     val cardColor = if (isDarkTheme) Color.DarkGray else Color.White
     val gold = Color(0xFFC7A449)
+    val secondaryVariant = if (isDarkTheme) Color.White else Color(0xFF705852)
 
     val context = LocalContext.current
 
-    var allDay by remember { mutableStateOf(false) }
-    var fecha by remember { mutableStateOf(LocalDate.now()) }
-    var horaInicio by remember { mutableStateOf(LocalTime.of(8, 0)) }
+    var allDay by remember { mutableStateOf(fechaInicial?.toLocalTime() == LocalTime.MIDNIGHT) }
+    var fecha by remember { mutableStateOf(fechaInicial?.toLocalDate() ?: LocalDate.now()) }
+    var horaInicio by remember { mutableStateOf(fechaInicial?.toLocalTime() ?: LocalTime.of(8, 0)) }
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
@@ -63,59 +66,64 @@ fun AgregarNotificacionUI(
         ).show()
     }
 
-    Scaffold(
-        containerColor = backgroundColor
-    ) { padding ->
-        Column(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f))
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = cardColor),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(8.dp),
             modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
+                .fillMaxWidth(0.9f)
+                .wrapContentHeight()
         ) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = cardColor),
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Todo el día", modifier = Modifier.weight(1f), color = textColor, style = MaterialTheme.typography.bodyLarge)
-                        Switch(checked = allDay, onCheckedChange = { allDay = it }, colors = SwitchDefaults.colors(checkedThumbColor = gold))
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Todo el día", modifier = Modifier.weight(1f), color = textColor, style = MaterialTheme.typography.bodyLarge)
+                    Switch(checked = allDay, onCheckedChange = { allDay = it }, colors = SwitchDefaults.colors(
+                        checkedThumbColor = gold,
+                        checkedTrackColor = secondaryVariant
+                    ))
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Column(modifier = Modifier.clickable { showDatePicker = true }) {
+                    Text("Fecha", style = MaterialTheme.typography.bodyLarge, color = textColor)
+                    Text(fecha.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")), style = MaterialTheme.typography.bodyLarge, color = textColor)
+                }
+
+                if (!allDay) {
+                    Spacer(Modifier.height(8.dp))
+                    Column(modifier = Modifier.clickable { showTimePicker = true }) {
+                        Text("Hora", style = MaterialTheme.typography.bodyLarge, color = textColor)
+                        Text(horaInicio.format(DateTimeFormatter.ofPattern("hh:mm a")), style = MaterialTheme.typography.bodyLarge, color = textColor)
                     }
+                }
 
-                    Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(24.dp))
 
-                    Column(modifier = Modifier.clickable { showDatePicker = true }) {
-                        Text("Fecha", style = MaterialTheme.typography.labelMedium, color = textColor)
-                        Text(fecha.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")), style = MaterialTheme.typography.bodyLarge, color = textColor)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    OutlinedButton(
+                        onClick = onCancelar,
+                        border = BorderStroke(1.dp, Color.Red),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Cancelar", color = Color.Red, style = MaterialTheme.typography.bodyLarge)
                     }
-
-                    if (!allDay) {
-                        Spacer(Modifier.height(8.dp))
-                        Column(modifier = Modifier.clickable { showTimePicker = true }) {
-                            Text("Hora", style = MaterialTheme.typography.labelMedium, color = textColor)
-                            Text(horaInicio.format(DateTimeFormatter.ofPattern("hh:mm a")), style = MaterialTheme.typography.bodyLarge, color = textColor)
-                        }
-                    }
-
-                    Spacer(Modifier.height(24.dp))
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        OutlinedButton(
-                            onClick = onCancelar,
-                            border = BorderStroke(1.dp, Color.Red),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
-                        ) {
-                            Text("Cancelar", color = Color.Red)
-                        }
-                        Button(
-                            onClick = {
-                                val fechaHora = if (allDay) fecha.atStartOfDay() else LocalDateTime.of(fecha, horaInicio)
-                                onGuardar(fechaHora)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = gold)
-                        ) {
-                            Text("Guardar", color = textColor)
-                        }
+                    Button(
+                        onClick = {
+                            val fechaHora = if (allDay) fecha.atStartOfDay() else LocalDateTime.of(fecha, horaInicio)
+                            onGuardar(fechaHora)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = gold),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Guardar", color = textColor, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             }
